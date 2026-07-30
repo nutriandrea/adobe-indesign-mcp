@@ -5,3 +5,5 @@ dist/
 .env
 test-config.json
 /bridge/
+.DS_Store
+.sisyphus/
