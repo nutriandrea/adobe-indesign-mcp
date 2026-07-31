@@ -18,3 +18,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Windows port scratch (machine-specific bridge artifacts stay local)
+win-bridge-local/
+*.local.jsx
