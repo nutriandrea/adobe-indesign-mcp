@@ -43,4 +43,13 @@ If Not IsEmpty(result) And Not IsNull(result) Then
     WScript.Echo result
 End If
 
+' Close any remaining documents without saving to avoid dialogs
+On Error Resume Next
+Dim d
+For d = inDesign.Documents.Count - 1 To 0 Step -1
+    inDesign.Documents(d).Close
+    If Err.Number <> 0 Then Err.Clear
+Next
+On Error GoTo 0
+
 Set inDesign = Nothing
