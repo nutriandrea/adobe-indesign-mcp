@@ -29,7 +29,7 @@ Multiple server instances can coexist (desktop app + CLI tests) — requests car
 2. **Start the bridge** (background, from the repo dir):
    `node bridge-proxy-persistent.mjs`
    Wait for: `🔄 Windows COM bridge (singleton server) listening on 127.0.0.1:8120`
-3. Verify the agent sees the server: `hermes tools list | grep -i indesign` → `indesign  all tools enabled`. If missing, check `mcp_servers.indesign.enabled: true` in `C:\Users\skype\AppData\Local\hermes\config.yaml`.
+3. Verify the agent sees the server: `hermes tools list | grep -i indesign` → `indesign  all tools enabled`. If missing, check `mcp_servers.indesign.enabled: true` in `%LOCALAPPDATA%\hermes\config.yaml`.
 4. Tell any subagent/CLI run: *"A singleton bridge is ALREADY RUNNING on port 8120 — do NOT start any bridge, do NOT use terminal."*
 
 ## Task pattern (e.g. "5-page A4 doc with 3in red circle on page 5")
@@ -58,6 +58,6 @@ Multiple server instances can coexist (desktop app + CLI tests) — requests car
 
 ## Config facts (Hermes, Windows)
 
-- Config: `C:\Users\skype\AppData\Local\hermes\config.yaml`, key `mcp_servers.indesign` (top-level `mcp_servers`, NOT nested `mcp.servers`).
+- Config: `%LOCALAPPDATA%\hermes\config.yaml`, key `mcp_servers.indesign` (top-level `mcp_servers`, NOT nested `mcp.servers`).
 - Args must be absolute Windows paths (`C:\Users\...`) — Hermes ignores `working_dir` and mangles MSYS `/c/...` paths.
 - After ANY `hermes config set`, re-verify `enabled: true` (config writers overwrite each other).

@@ -37,7 +37,7 @@ async function test() {
   console.log('✅ Result:', r3);
   
   console.log('\nTest 4: Export to IDML...');
-  const outPath = 'C:/Users/skype/AppData/Local/Temp/com-bridge-test.idml';
+  const outPath = join(tmpdir(), 'com-bridge-test.idml');
   const r4 = await runScript(`app.scriptPreferences.userInteractionLevel = 1699311169; var doc = app.documents.add(true); var tf = doc.pages.item(0).textFrames.add(); tf.contents = "COM Bridge Test"; doc.exportFile(ExportFormat.INDESIGN_MARKUP, File("${outPath}"), false); var r = "{exported:true,path:\\"" + "${outPath}" + "\\"}"; doc.close(); r;`);
   console.log('✅ Result:', r4);
   
