@@ -107,12 +107,12 @@ export class ColorHandler implements IHandler {
     if (params.model === 'cmyk') {
       const spaceVal = params.colorType === 'spot' ? 'SpotColor' : 'ProcessColor';
       colorCode = `
-        var color = doc.colors.add({name: "${escName}", colorModel: ColorModel.PROCESS_CMYK, model: ColorModel.PROCESS_CMYK, space: ColorSpace.${spaceVal}});
+        var color = doc.colors.add({name: "${escName}", colorModel: __PROCESS_COLOR_MODEL, model: __PROCESS_COLOR_MODEL, space: ColorSpace.${spaceVal}});
         color.colorValue = [${params.cyan}, ${params.magenta}, ${params.yellow}, ${params.black}];
       `;
     } else if (params.model === 'rgb') {
       colorCode = `
-        var color = doc.colors.add({name: "${escName}", colorModel: ColorModel.PROCESS_RGB, model: ColorModel.PROCESS_RGB, space: ColorSpace.RGB});
+        var color = doc.colors.add({name: "${escName}", colorModel: __PROCESS_COLOR_MODEL, model: __PROCESS_COLOR_MODEL, space: ColorSpace.RGB});
         color.colorValue = [${params.red}, ${params.green}, ${params.blue}];
       `;
     } else {

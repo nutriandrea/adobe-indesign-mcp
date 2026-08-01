@@ -8,6 +8,18 @@
  * These are injected via ScriptExecutor before every script execution.
  */
 export const EXTENDSCRIPT_HELPERS = `
+// ── InDesign version compatibility (read-only safe) ──
+// InDesign 2026 renames ColorModel.PROCESS_RGB / PROCESS_CMYK to ColorModel.PROCESS.
+// Enum objects are READ-ONLY in 2026, so we never assign to them; we compute a
+// plain-number constant by READING whichever property exists.
+var __PROCESS_COLOR_MODEL = 1886548851;
+try {
+  if (typeof ColorModel !== 'undefined') {
+    if (ColorModel.PROCESS !== undefined) __PROCESS_COLOR_MODEL = ColorModel.PROCESS;
+    else if (ColorModel.PROCESS_RGB !== undefined) __PROCESS_COLOR_MODEL = ColorModel.PROCESS_RGB;
+  }
+} catch (e) {}
+
 // ── String escaping for safe ExtendScript literal embedding ──
 function __escapeJsx(str) {
   return String(str).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"').replace(/\\n/g, '\\\\n').replace(/\\r/g, '\\\\r').replace(/\\t/g, '\\\\t');

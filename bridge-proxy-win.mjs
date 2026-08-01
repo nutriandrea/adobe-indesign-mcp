@@ -23,7 +23,7 @@ import { resolve, join } from 'path';
 const WS_URL = process.env.BRIDGE_WS_URL || 'ws://127.0.0.1:8120';
 const BRIDGE_VBS = resolve(process.env.BRIDGE_VBS_PATH || './run_jsx.vbs');
 const RECONNECT_DELAY_MS = 3000;
-const MAX_RECONNECT_ATTEMPTS = 20;
+const MAX_RECONNECT_ATTEMPTS = 100;
 
 let ws = null;
 let reconnectTimer = null;
@@ -35,7 +35,7 @@ let reconnectAttempts = 0;
  */
 function wrapWithNeverInteract(code) {
   return `
-app.scriptPreferences.userInteractionLevel = UserInteractionLevel.NEVER_INTERACT;
+app.scriptPreferences.userInteractionLevel = 1699311169;
 ${code}
 `;
 }

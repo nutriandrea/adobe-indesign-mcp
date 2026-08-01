@@ -136,6 +136,68 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
                                            └──────────────────────┘
 ```
 
+## 🪟 Windows COM Bridge (required on Windows)
+
+On Windows the UXP plugin (`plugin/`) is unsupported on InDesign 2026 and the bundled `bridge-proxy.mjs` is macOS-only (JXA/osascript). Instead, a **singleton WebSocket bridge** owns one persistent cscript process and one InDesign COM instance. MCP server instances **connect to it as clients** — they never bind a port, so any number of servers (desktop app, CLI, tests) can coexist without `EADDRINUSE` collisions, all sharing the *same* InDesign instance and document set.
+
+```
+Any MCP server instance (node dist/index.js …)     ← N servers, no port binding
+  └─ BridgeServer (dist/bridge/BridgeServer.js) = WebSocket CLIENT
+       └─ ws://127.0.0.1:8120
+            └─ bridge-proxy-persistent.mjs = WebSocket SERVER (singleton)
+                 └─ run_jsx_persistent.vbs (one long-lived cscript, stdin/stdout)
+                      └─ InDesign COM — ONE instance, ONE document set
+```
+
+Requests carry a UUID; responses route by ID, so multiple servers share one bridge safely.
+
+### Setup (Windows)
+
+1. **Launch InDesign** (must be visible — `CreateObject` binds to the running instance; without one, a hidden instance is created and documents are invisible).
+2. **Start the bridge** (keep it running):
+   ```bash
+   cd adobe-indesign-mcp
+   node bridge-proxy-persistent.mjs
+   # → 🔄 Windows COM bridge (singleton server) listening on 127.0.0.1:8120
+   ```
+3. **Register the MCP server** in your client (Hermes example):
+   ```yaml
+   # C:\Users\<you>\AppData\Local\hermes\config.yaml — top-level key `mcp_servers` (not `mcp.servers`)
+   mcp_servers:
+     indesign:
+       command: node
+       args:
+         - C:\absolute\path\to\adobe-indesign-mcp\dist\index.js
+         - C:\absolute\path\to\adobe-indesign-mcp\indesign-nutria-mcp.json
+       enabled: true
+   ```
+   > Hermes ignores `working_dir` for MCP servers and mangles MSYS `/c/...` paths — always use absolute `C:\...` paths, and re-verify `enabled: true` after any `hermes config set` (config writers overwrite each other).
+
+### Windows fixes included in this branch (2026-08-01)
+
+| # | Fix |
+|---|---|
+| 1 | **Singleton bridge, client-mode servers** — servers no longer bind port 8120; the bridge listens. Eliminates the EADDRINUSE spawn storm when multiple Hermes processes run. |
+| 2 | **`sanitizeCode()` vs `eval(`** — the JSON.parse polyfill used `eval(...)`, which the sanitizer replaced with a comment, orphaning parentheses → `Expected: ;` on every tool call. Polyfill now uses `[].constructor.constructor`. |
+| 3 | **`ColorModel` enums renamed AND read-only in InDesign 2026** — `ColorModel.PROCESS_RGB/PROCESS_CMYK` → `ColorModel.PROCESS` (1886548851); assigning to the enum throws `ColorModel is read only`. Helpers define `__PROCESS_COLOR_MODEL` by reading, and `ColorHandler` uses it. |
+| 4 | **`UserInteractionLevel` enum undefined** — scripts are wrapped with magic number `1699311169` (NEVER_INTERACT) instead of the enum. |
+| 5 | **Persistent cscript** — `run_jsx_persistent.vbs` keeps ONE COM connection alive across calls (old `run_jsx.vbs` spawned a fresh COM instance per call and had a loop that closed all documents, destroying session state). |
+| 6 | **Bridge reconnect bug** — old bridge scheduled reconnects from both `error` and `close` (double timers); only `close` schedules now. |
+
+### Verify independently (don't trust "ok" strings)
+
+```bash
+echo "C:\path\check.jsx" | cscript //nologo run_jsx_persistent.vbs
+```
+
+```javascript
+// check.jsx — single-line JSON result
+app.scriptPreferences.userInteractionLevel = 1699311169;
+JSON.stringify({doc: app.documents[0].name, pages: app.documents[0].pages.length,
+  fill: app.documents[0].pages[4].pageItems[0].fillColor.name,
+  bounds: app.documents[0].pages[4].pageItems[0].geometricBounds});
+```
+
 ### Full Handler Catalog
 
 | Handler | Tools | Key Features |
@@ -223,6 +285,8 @@ node dist/index.js
 1. Open **UXP Developer Tool**
 2. Load `plugin/` directory
 3. Click **MCP Bridge → Connect**
+
+> 🪟 **On Windows (InDesign 2026):** the UXP plugin is unsupported — skip this step and use the [Windows COM Bridge](#🪟-windows-com-bridge-required-on-windows) instead (start InDesign, then `node bridge-proxy-persistent.mjs`).
 
 ### 2️⃣ Connect your AI agent
 

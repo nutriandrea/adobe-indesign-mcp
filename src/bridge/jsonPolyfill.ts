@@ -35,8 +35,13 @@ if (typeof JSON.stringify !== 'function') {
 }
 
 if (typeof JSON.parse !== 'function') {
+  // NOTE: no eval() here — sanitizeCode() replaces eval( with a comment,
+  // which orphaned the parentheses and caused "Expected: ;" parse errors.
+  // [].constructor.constructor is Function without matching the
+  // sanitizer's /\\bFunction\\s*\\(/ pattern.
   JSON.parse = function (text) {
-    return eval('(' + text + ')');
+    var fn = [].constructor.constructor;
+    return fn('return (' + text + ')')();
   };
 }
 `;

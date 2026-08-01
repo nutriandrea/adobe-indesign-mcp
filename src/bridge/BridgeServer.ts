@@ -1,116 +1,138 @@
-import { createServer, type Server } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 import type { BridgeResponse, BridgeStatus } from '../types/index.js';
 import { ScriptExecutor } from './ScriptExecutor.js';
 import { logger } from '../utils/logger.js';
 
-const DEFAULT_HEALTH_CHECK_INTERVAL = 30000;  // 30s
-const DEFAULT_STALE_TIMEOUT = 120000;          // 2min without any message = stale
+const DEFAULT_RECONNECT_DELAY = 3000; // 3s
+
 export interface BridgeServerOptions {
   port: number;
   host: string;
   maxPayload: number;
   timeout: number;
-  healthCheckIntervalMs?: number;
-  staleTimeoutMs?: number;
+  reconnectDelayMs?: number;
 }
 
+/**
+ * Client-mode bridge connection (architecture fixed 2026-08-01):
+ * The MCP server does NOT bind a port. It connects as a WebSocket CLIENT to
+ * the singleton Windows COM bridge (bridge-proxy-persistent.mjs), which owns
+ * the single persistent InDesign COM instance. Any number of MCP server
+ * instances can therefore share one bridge / one InDesign / one document set
+ * without EADDRINUSE collisions.
+ */
 export class BridgeServer {
-  private wss: WebSocketServer | null = null;
-  private httpServer: Server | null = null;
+  private ws: WebSocket | null = null;
   private executor: ScriptExecutor;
   private options: BridgeServerOptions;
-  private connections: Set<WebSocket> = new Set();
-  private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
-  private lastActivity: Map<WebSocket, number> = new Map();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _connected: boolean = false;
+  private _stopped: boolean = false;
 
   constructor(options: BridgeServerOptions, executor: ScriptExecutor) {
     this.options = options;
     this.executor = executor;
 
     this.executor.on('request', (request) => {
-      this.broadcast(JSON.stringify(request));
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify(request));
+      } else {
+        logger.error('Bridge not connected — cannot dispatch request', { id: request.id });
+        this.executor.handleResponse({
+          id: request.id,
+          type: 'error',
+          error:
+            'Bridge is not connected. Start the Windows COM bridge (node bridge-proxy-persistent.mjs) and try again.',
+        });
+      }
     });
   }
 
-  /** Whether at least one WebSocket connection is open */
+  /** Whether the bridge WebSocket is open */
   get connected(): boolean {
     return this._connected;
   }
 
   async start(): Promise<void> {
-    return new Promise((resolve) => {
-      this.httpServer = createServer();
-      this.wss = new WebSocketServer({
-        server: this.httpServer,
-        maxPayload: this.options.maxPayload,
+    // Client mode: connect to the singleton bridge. No port binding,
+    // so multiple MCP server instances can coexist without EADDRINUSE.
+    this._stopped = false;
+    this.connect();
+    return Promise.resolve();
+  }
+
+  private connect(): void {
+    if (this._stopped) return;
+
+    const url = `ws://${this.options.host}:${this.options.port}`;
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(url);
+    } catch (err) {
+      logger.error('Bridge client creation failed', {
+        error: err instanceof Error ? err.message : String(err),
       });
+      this.scheduleReconnect();
+      return;
+    }
+    this.ws = ws;
 
-      this.wss.on('connection', (ws) => {
-        this.connections.add(ws);
-        this.lastActivity.set(ws, Date.now());
-        this._connected = true;
-        logger.info('Bridge client connected');
+    ws.on('open', () => {
+      logger.info(`Connected to bridge at ${url}`);
+      this._connected = true;
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+    });
 
-        ws.on('message', (raw) => {
-          this.lastActivity.set(ws, Date.now());
-          try {
-            const response: BridgeResponse = JSON.parse(raw.toString());
-            this.executor.handleResponse(response);
-          } catch (err) {
-            logger.error('Invalid bridge message', { error: err instanceof Error ? err.message : String(err) });
-          }
+    ws.on('message', (raw) => {
+      try {
+        const msg: BridgeResponse = JSON.parse(raw.toString());
+        if (msg.id) {
+          this.executor.handleResponse(msg);
+        }
+      } catch (err) {
+        logger.error('Invalid bridge message', {
+          error: err instanceof Error ? err.message : String(err),
         });
+      }
+    });
 
-        ws.on('close', () => {
-          this.connections.delete(ws);
-          this.lastActivity.delete(ws);
-          if (this.connections.size === 0) {
-            this._connected = false;
-          }
-          logger.info('Bridge client disconnected');
-        });
+    ws.on('close', () => {
+      this._connected = false;
+      this.ws = null;
+      logger.warn(`Bridge connection closed (${url}). Reconnecting...`);
+      this.scheduleReconnect();
+    });
 
-        ws.on('error', (err) => {
-          logger.error('Bridge WebSocket error', { error: err.message });
-          this.connections.delete(ws);
-          this.lastActivity.delete(ws);
-          if (this.connections.size === 0) {
-            this._connected = false;
-          }
-        });
-
-        ws.send(JSON.stringify({ type: 'connected', version: '1.0.0' }));
-      });
-
-      this.httpServer.listen(this.options.port, this.options.host, () => {
-        logger.info(`Bridge server listening on ${this.options.host}:${this.options.port}`);
-        this.startHealthChecks();
-        resolve();
-      });
+    ws.on('error', (err) => {
+      // 'close' will follow and handle the reconnect — do not schedule here.
+      logger.error('Bridge WebSocket error', { error: err.message });
     });
   }
 
+  private scheduleReconnect(): void {
+    if (this._stopped) return;
+    if (this.reconnectTimer) return;
+    const delay = this.options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
+  }
+
   async stop(): Promise<void> {
-    this.stopHealthChecks();
-    for (const ws of this.connections) {
-      ws.close();
+    this._stopped = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
-    this.connections.clear();
-    this.lastActivity.clear();
-    this._connected = false;
-
-    if (this.wss) {
-      this.wss.close();
-      this.wss = null;
-    }
-
-    if (this.httpServer) {
-      return new Promise((resolve) => {
-        this.httpServer!.close(() => resolve());
-        this.httpServer = null;
-      });
+    if (this.ws) {
+      const ws = this.ws;
+      this.ws = null;
+      this._connected = false;
+      try { ws.close(); } catch { /* noop */ }
     }
   }
 
@@ -122,60 +144,8 @@ export class BridgeServer {
     };
   }
 
-  /** Number of active WebSocket connections */
+  /** Number of active WebSocket connections (0 or 1 in client mode) */
   get connectionCount(): number {
-    return this.connections.size;
-  }
-
-  // ── Health checks ──
-
-  private startHealthChecks(): void {
-    const interval = this.options.healthCheckIntervalMs ?? DEFAULT_HEALTH_CHECK_INTERVAL;
-    this.healthCheckTimer = setInterval(() => this.runHealthCheck(), interval);
-  }
-
-  private stopHealthChecks(): void {
-    if (this.healthCheckTimer) {
-      clearInterval(this.healthCheckTimer);
-      this.healthCheckTimer = null;
-    }
-  }
-
-  private runHealthCheck(): void {
-    const now = Date.now();
-    const staleTimeout = this.options.staleTimeoutMs ?? DEFAULT_STALE_TIMEOUT;
-
-    for (const ws of this.connections) {
-      // Close stale connections
-      const lastActive = this.lastActivity.get(ws) ?? 0;
-      if (now - lastActive > staleTimeout) {
-        logger.warn('Closing stale bridge connection (no activity)', {
-          idleMs: now - lastActive,
-          staleTimeout,
-        });
-        ws.close(4001, 'Connection stale - no activity detected');
-        this.connections.delete(ws);
-        this.lastActivity.delete(ws);
-        continue;
-      }
-
-      // Ping active connections
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.ping();
-      }
-    }
-
-    // Update connected flag
-    this._connected = this.connections.size > 0;
-  }
-
-  // ── Messaging ──
-
-  private broadcast(data: string): void {
-    for (const ws of this.connections) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(data);
-      }
-    }
+    return this._connected ? 1 : 0;
   }
 }

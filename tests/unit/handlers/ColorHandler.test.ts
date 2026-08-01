@@ -64,7 +64,7 @@ describe('ColorHandler', () => {
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('colors.add');
       expect(code).toContain('MyRed');
-      expect(code).toContain('PROCESS_CMYK');
+      expect(code).toContain('__PROCESS_COLOR_MODEL');
       expect(code).toContain('0, 100, 100, 0');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
@@ -85,7 +85,7 @@ describe('ColorHandler', () => {
       }, {});
 
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('PROCESS_RGB');
+      expect(code).toContain('__PROCESS_COLOR_MODEL');
       expect(code).toContain('0, 0, 255');
     });
 

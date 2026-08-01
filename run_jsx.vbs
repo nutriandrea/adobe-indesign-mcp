@@ -1,36 +1,36 @@
-' run_jsx.vbs — run ExtendScript inside InDesign via COM automation.
-' Usage: cscript //nologo run_jsx.vbs <script.jsx>
-' Echoes the script's return value to stdout (last expression).
-' Does NOT quit InDesign — keeps the COM instance alive for the bridge.
+' Test COM behavior - check if GetObject finds the right instance
 Option Explicit
-Const JAVASCRIPT_LANG = 1246973031   ' DoScript language = JavaScript (ExtendScript)
+Const JAVASCRIPT_LANG = 1246973031
 
 Dim fso, jsxFile, jsxText, inDesign, result
 Set fso = CreateObject("Scripting.FileSystemObject")
 
-If WScript.Arguments.Count > 0 Then
-    jsxFile = WScript.Arguments(0)
-Else
-    WScript.Echo "Usage: cscript //nologo run_jsx.vbs <script.jsx>"
-    WScript.Quit 1
-End If
-
-If Not fso.FileExists(jsxFile) Then
-    WScript.Echo "JSX file not found: " & jsxFile
-    WScript.Quit 1
-End If
-
+jsxFile = WScript.Arguments(0)
 jsxText = fso.OpenTextFile(jsxFile, 1).ReadAll
 
+' Method 1: Try GetObject first (reuse existing)
 On Error Resume Next
-Set inDesign = CreateObject("InDesign.Application")
+Set inDesign = GetObject(, "InDesign.Application")
 If Err.Number <> 0 Then
-    WScript.Echo "CreateObject failed: " & Err.Description
-    WScript.Quit 2
+    WScript.Echo "GetObject failed: " & Err.Description & " (errno=" & Err.Number & ")"
+    Err.Clear
+    ' Fall back to CreateObject
+    Set inDesign = CreateObject("InDesign.Application")
+    If Err.Number <> 0 Then
+        WScript.Echo "CreateObject failed: " & Err.Description
+        WScript.Quit 2
+    End If
+    WScript.Echo "Created NEW instance"
+Else
+    WScript.Echo "Reused EXISTING instance"
 End If
 On Error GoTo 0
 
-' Execute the script; capture return value (last expression)
+' Check what's running
+result = "docs:" & inDesign.Documents.Count
+WScript.Echo result
+
+' Run the script
 result = inDesign.DoScript(jsxText, JAVASCRIPT_LANG)
 If Err.Number <> 0 Then
     WScript.Echo "DoScript error: " & Err.Description
@@ -38,18 +38,9 @@ If Err.Number <> 0 Then
     WScript.Quit 3
 End If
 
-' Echo result to stdout — null/empty is fine, bridge handles it
+' Echo result to stdout
 If Not IsEmpty(result) And Not IsNull(result) Then
     WScript.Echo result
 End If
-
-' Close any remaining documents without saving to avoid dialogs
-On Error Resume Next
-Dim d
-For d = inDesign.Documents.Count - 1 To 0 Step -1
-    inDesign.Documents(d).Close
-    If Err.Number <> 0 Then Err.Clear
-Next
-On Error GoTo 0
 
 Set inDesign = Nothing
