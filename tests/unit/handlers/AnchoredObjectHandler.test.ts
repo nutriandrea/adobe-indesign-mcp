@@ -76,12 +76,14 @@ describe('AnchoredObjectHandler', () => {
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('stories[0].insertionPoints[1]');
-      expect(code).toContain('rectangles.add');
+      expect(code).toContain('ip.rectangles.add');
       expect(code).toContain('geometricBounds: [0, 0, 20, 40]');
-      expect(code).toContain('newItem.move(ip)');
+      // InDesign 2026: move(InsertionPoint) is no longer supported — the item
+      // is added to the insertion point's own collection instead.
+      expect(code).not.toContain('move(ip)');
       expect(code).toContain('anchoredObjectSettings');
       expect(code).toContain('AnchorPosition.ANCHORED');
-      expect(code).toContain('AnchorPoint.TOP_LEFT');
+      expect(code).toContain("__ANCHOR_POINT('TOP_LEFT')");
       expect(code).toContain('anchorXoffset = 5');
       expect(code).toContain('anchorYoffset = 10');
       expect(code).toContain('anchorSpaceAbove = 3');
@@ -192,7 +194,7 @@ describe('AnchoredObjectHandler', () => {
       expect(code).toContain('pages[0].allPageItems[1]');
       expect(code).toContain('anchoredObjectSettings');
       expect(code).toContain('AnchorPosition.ABOVE_LINE');
-      expect(code).toContain('AnchorPoint.BOTTOM_RIGHT');
+      expect(code).toContain("__ANCHOR_POINT('BOTTOM_RIGHT')");
       expect(code).toContain('anchorXoffset = 10');
       expect(code).toContain('anchorYoffset = 20');
       expect(code).toContain('anchorSpaceAbove = 5');

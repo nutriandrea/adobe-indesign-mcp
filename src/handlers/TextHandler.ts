@@ -100,13 +100,19 @@ export class TextHandler implements IHandler {
     return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
   }
 
+  /** Normalize \n (and \r\n) to ExtendScript's paragraph break \r — InDesign
+   *  2026 does NOT create paragraphs from \n in `contents = "..."`. */
+  private normalizeParagraphs(content: string): string {
+    return content.replace(/\r\n/g, '\r').replace(/\n/g, '\r');
+  }
+
   private async addFrame(args: unknown, _extra: any): Promise<ToolResult> {
     const params = z.object({
       pageIndex: z.number().int().min(0),
       bounds: z.object({ top: z.number(), left: z.number(), bottom: z.number(), right: z.number() }),
       content: z.string().default(''),
     }).parse(args);
-    const escContent = this.escape(params.content);
+    const escContent = this.escape(this.normalizeParagraphs(params.content));
     const { top, left, bottom, right } = params.bounds;
     const code = `
       var page = app.activeDocument.pages[${params.pageIndex}];
@@ -125,7 +131,7 @@ export class TextHandler implements IHandler {
       frameIndex: z.number().int().min(0),
       content: z.string(),
     }).parse(args as Record<string, unknown>);
-    const escContent = this.escape(params.content);
+    const escContent = this.escape(this.normalizeParagraphs(params.content));
     const code = `app.activeDocument.pages[${params.pageIndex}].textFrames[${params.frameIndex}].contents = "${escContent}"; "set"`;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);

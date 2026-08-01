@@ -49,11 +49,14 @@ Multiple server instances can coexist (desktop app + CLI tests) — requests car
 - Never start a second bridge or a second server manually while one is connected.
 - If a tool errors `Bridge is not connected` → the bridge died; restart it, then retry.
 - ExtendScript results must be single-line JSON (the VBS protocol is line-based).
+- `anchoredObject_create` is fixed (2026-08-01): InDesign 2026's `move()` rejects an `InsertionPoint` target, so the handler adds the item to `ip.ovals/rectangles/textFrames` directly. If it ever fails, `script_run` fallback: `story.insertionPoints[i].ovals.add({geometricBounds: [0,0,76.2,76.2], fillColor: doc.colors.item('Red'), strokeWeight: 0})`.
+- **Raw cscript has NO JSON polyfill** — `JSON.stringify` is undefined when piping a check.jsx straight into `run_jsx_persistent.vbs` (the MCP server injects the polyfill, the bridge does not). For direct verification, emit a plain single-line string joined with `|`.
 
 ## Enums that differ in InDesign 2026 (all handled in code — don't re-fix)
 
 - `UserInteractionLevel` undefined → magic `1699311169` (bridge wraps every script).
 - `ColorModel.PROCESS_RGB/PROCESS_CMYK` renamed to `ColorModel.PROCESS` (read-only enum) → helpers define `__PROCESS_COLOR_MODEL` by reading.
+- `AnchorPoint.TOP_LEFT` renamed to `AnchorPoint.TOP_LEFT_ANCHOR` etc. (read-only enum) → helpers define `__ANCHOR_POINT(name)` by reading.
 - `sanitizeCode()` used to mangle `eval(` in the JSON polyfill → polyfill now uses `[].constructor.constructor`.
 
 ## Config facts (Hermes, Windows)
