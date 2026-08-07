@@ -153,25 +153,28 @@ Requests carry a UUID; responses route by ID, so multiple servers share one brid
 
 ### Setup (Windows)
 
-1. **Launch InDesign** (must be visible — `CreateObject` binds to the running instance; without one, a hidden instance is created and documents are invisible).
-2. **Start the bridge** (keep it running):
+1. **Launch InDesign visibly** — `CreateObject("InDesign.Application")` binds to the running instance; without one, documents are created in a hidden window the user can't see.
+2. **Start the bridge** (one-time, from the repo dir):
    ```bash
    cd adobe-indesign-mcp
    node bridge-proxy-persistent.mjs
    # → 🔄 Windows COM bridge (singleton server) listening on 127.0.0.1:8120
    ```
+   Once started, the bridge stays running. MCP server instances connect to it as WebSocket clients — they never bind a port, so any number of servers (desktop app, CLI, tests) can coexist.
 3. **Register the MCP server** in your client (Hermes example):
    ```yaml
-   # C:\Users\<you>\AppData\Local\hermes\config.yaml — top-level key `mcp_servers` (not `mcp.servers`)
+   # <config_path> — top-level key `mcp_servers` (not `mcp.servers`)
    mcp_servers:
      indesign:
        command: node
        args:
-         - C:\absolute\path\to\adobe-indesign-mcp\dist\index.js
-         - C:\absolute\path\to\adobe-indesign-mcp\indesign-nutria-mcp.json
+         - C:\\absolute\\path\\to\\adobe-indesign-mcp\\dist\\index.js
+         - C:\\absolute\\path\\to\\adobe-indesign-mcp\\indesign-nutria-mcp.json
        enabled: true
    ```
-   > Hermes ignores `working_dir` for MCP servers and mangles MSYS `/c/...` paths — always use absolute `C:\...` paths, and re-verify `enabled: true` after any `hermes config set` (config writers overwrite each other).
+   > Always use absolute `C:\\...` paths (not MSYS `/c/...`). After any config change, re-verify `enabled: true` — config writers may overwrite it.
+
+**For AI agents:** the bridge is started by the host application (e.g. Hermes desktop). Do NOT start it yourself. Do NOT read bridge source code to understand the setup. Just call `mcp_indesign_*` tools directly.
 
 ### Windows fixes included in this branch (2026-08-01)
 
@@ -183,20 +186,6 @@ Requests carry a UUID; responses route by ID, so multiple servers share one brid
 | 4 | **`UserInteractionLevel` enum undefined** — scripts are wrapped with magic number `1699311169` (NEVER_INTERACT) instead of the enum. |
 | 5 | **Persistent cscript** — `run_jsx_persistent.vbs` keeps ONE COM connection alive across calls (old `run_jsx.vbs` spawned a fresh COM instance per call and had a loop that closed all documents, destroying session state). |
 | 6 | **Bridge reconnect bug** — old bridge scheduled reconnects from both `error` and `close` (double timers); only `close` schedules now. |
-
-### Verify independently (don't trust "ok" strings)
-
-```bash
-echo "C:\path\check.jsx" | cscript //nologo run_jsx_persistent.vbs
-```
-
-```javascript
-// check.jsx — single-line JSON result
-app.scriptPreferences.userInteractionLevel = 1699311169;
-JSON.stringify({doc: app.documents[0].name, pages: app.documents[0].pages.length,
-  fill: app.documents[0].pages[4].pageItems[0].fillColor.name,
-  bounds: app.documents[0].pages[4].pageItems[0].geometricBounds});
-```
 
 ### Full Handler Catalog
 

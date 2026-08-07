@@ -1,66 +1,62 @@
 ---
 name: indesign-mcp-layout
-description: "Use when doing InDesign layout through MCP on Windows."
-version: 1.0.0
+description: "Use when doing InDesign layout through MCP on Windows. Call mcp_indesign_* tools directly — do not start the bridge or read source code."
+version: 2.0.0
 platforms: [windows]
 ---
 
 # InDesign Layout Through MCP (Windows)
 
-**Context:** This repo (`adobe-indesign-mcp`) is served to agents through the Hermes MCP server `indesign` (~190 `mcp_indesign_*` tools). On Windows the tools need a COM bridge process that owns ONE persistent InDesign instance.
+**Context:** The `adobe-indesign-mcp` repo provides ~190 `mcp_indesign_*` tools via the Hermes MCP server. On Windows the tools communicate through a COM bridge that is started automatically by the host application (e.g. Hermes desktop app).
 
-## Architecture (current, fixed 2026-08-01)
+## How to Use
 
+**Call MCP tools directly. Do NOT:**
+- Start `bridge-proxy-persistent.mjs` yourself
+- Run cscript/VBS scripts
+- Read bridge source code
+- Check session history to "verify" setup
+- Write verification scripts
+
+**Do:**
 ```
-Any Hermes process (desktop app or `hermes chat -q`)
-  └─ spawns MCP server: node dist/index.js indesign-nutria-mcp.json
-       └─ BridgeServer = WebSocket CLIENT  (no port binding → no EADDRINUSE)
-            └─ connects to ws://127.0.0.1:8120
-                 └─ bridge-proxy-persistent.mjs = WebSocket SERVER (singleton)
-                      └─ run_jsx_persistent.vbs (one long-lived cscript)
-                           └─ InDesign COM — ONE instance, ONE document set
+mcp_indesign__document_create → mcp_indesign__page_add → mcp_indesign__shape_ellipse_create → etc.
 ```
 
-Multiple server instances can coexist (desktop app + CLI tests) — requests carry UUIDs, responses route by ID. Never start a second bridge.
+Use `mcp_indesign__document_getInfo` after changes to verify results.
 
-## Before any layout task
+## Prerequisites
 
-1. **InDesign must be visibly open** — `CreateObject` binds to the RUNNING instance; if none is running, a hidden instance is created and documents are INVISIBLE to the user.
-2. **Start the bridge** (background, from the repo dir):
-   `node bridge-proxy-persistent.mjs`
-   Wait for: `🔄 Windows COM bridge (singleton server) listening on 127.0.0.1:8120`
-3. Verify the agent sees the server: `hermes tools list | grep -i indesign` → `indesign  all tools enabled`. If missing, check `mcp_servers.indesign.enabled: true` in `%LOCALAPPDATA%\hermes\config.yaml`.
-4. Tell any subagent/CLI run: *"A singleton bridge is ALREADY RUNNING on port 8120 — do NOT start any bridge, do NOT use terminal."*
+1. **InDesign must be visibly open** — `CreateObject("InDesign.Application")` binds to the running instance. Without it, documents are created in a hidden window.
+2. **Use `delivery_mode: 'foreground'`** for all MCP calls — background mode drops key events and makes it impossible to detect dialogs.
+3. **If a Missing Fonts dialog appears**, dismiss it with `computer_use` (foreground) before retrying.
 
-## Task pattern (e.g. "5-page A4 doc with 3in red circle on page 5")
+## Page Sizes (in points for document creation)
 
-1. `mcp_indesign__document_create` — width 210, height 297 (mm), pages 1.
-2. `mcp_indesign__page_add` × N on the SAME document — never create a second doc; reuse the same document across all calls.
-3. `mcp_indesign__color_swatch_create` — model rgb, red 255, green 0, blue 0.
-4. `mcp_indesign__shape_ellipse_create` — pageIndex 4 (0-based), width/height 76.2 mm (3 in), fillColor "Red".
-5. `mcp_indesign__document_getInfo` to verify.
-6. **Verify independently** — never trust tool "ok" strings:
-   `echo "C:\path\check.jsx" | cscript //nologo run_jsx_persistent.vbs`
-   check.jsx: `JSON.stringify({doc: app.documents[0].name, pages: app.documents[0].pages.length, fill: app.documents[0].pages[4].pageItems[0].fillColor.name, bounds: app.documents[0].pages[4].pageItems[0].geometricBounds})`
+| Paper | Width × Height (pt) |
+|-------|---------------------|
+| US Letter | 612 × 792 |
+| A4 | 595 × 842 |
+| A3 | 842 × 1191 |
+| Landscape A4 | 842 × 595 |
 
-## Rules
+## Key InDesign 2026 Gotchas (all handled by the bridge)
 
-- **NEVER run close-docs/cleanup scripts after a successful task** — it destroys the deliverable the user wants to see.
-- Never start a second bridge or a second server manually while one is connected.
-- If a tool errors `Bridge is not connected` → the bridge died; restart it, then retry.
-- ExtendScript results must be single-line JSON (the VBS protocol is line-based).
-- `anchoredObject_create` is fixed (2026-08-01): InDesign 2026's `move()` rejects an `InsertionPoint` target, so the handler adds the item to `ip.ovals/rectangles/textFrames` directly. If it ever fails, `script_run` fallback: `story.insertionPoints[i].ovals.add({geometricBounds: [0,0,76.2,76.2], fillColor: doc.colors.item('Red'), strokeWeight: 0})`.
-- **Raw cscript has NO JSON polyfill** — `JSON.stringify` is undefined when piping a check.jsx straight into `run_jsx_persistent.vbs` (the MCP server injects the polyfill, the bridge does not). For direct verification, emit a plain single-line string joined with `|`.
+- `UserInteractionLevel` enum undefined — bridge wraps scripts with magic number `1699311169`
+- `ColorModel.PROCESS_RGB` renamed to `ColorModel.PROCESS` — bridge handles it
+- `anchoredObject_create`: InDesign 2026's `move()` rejects `InsertionPoint` — handler adds to `ip.ovals/rectangles/textFrames` directly
 
-## Enums that differ in InDesign 2026 (all handled in code — don't re-fix)
+## If Tools Fail
 
-- `UserInteractionLevel` undefined → magic `1699311169` (bridge wraps every script).
-- `ColorModel.PROCESS_RGB/PROCESS_CMYK` renamed to `ColorModel.PROCESS` (read-only enum) → helpers define `__PROCESS_COLOR_MODEL` by reading.
-- `AnchorPoint.TOP_LEFT` renamed to `AnchorPoint.TOP_LEFT_ANCHOR` etc. (read-only enum) → helpers define `__ANCHOR_POINT(name)` by reading.
-- `sanitizeCode()` used to mangle `eval(` in the JSON polyfill → polyfill now uses `[].constructor.constructor`.
+1. Check InDesign is open and visible
+2. Check `delivery_mode` is `'foreground'`
+3. If error says "Bridge is not connected" — InDesign may have closed; reopen it and retry
+4. If error is `APIConnectionError` — model base_url may be `127.0.0.1`; change to the LAN IP
 
-## Config facts (Hermes, Windows)
+## What NOT to Do
 
-- Config: `%LOCALAPPDATA%\hermes\config.yaml`, key `mcp_servers.indesign` (top-level `mcp_servers`, NOT nested `mcp.servers`).
-- Args must be absolute Windows paths (`C:\Users\...`) — Hermes ignores `working_dir` and mangles MSYS `/c/...` paths.
-- After ANY `hermes config set`, re-verify `enabled: true` (config writers overwrite each other).
+- Do NOT start the bridge yourself — the host application starts it
+- Do NOT read `dist/bridge/BridgeServer.js` or any source code
+- Do NOT check session history to "verify" the setup
+- Do NOT write custom verification scripts — use `mcp_indesign__document_getInfo` only
+- Do NOT close documents after a successful task — the user wants to see them

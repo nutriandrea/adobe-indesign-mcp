@@ -12,6 +12,19 @@ hosts cannot run:
 same WebSocket protocol but executes ExtendScript through the **COM automation
 interface** that InDesign exposes on Windows.
 
+## Architecture (current — fixed 2026-08-01)
+
+```
+Any MCP server instance (node dist/index.js …)     ← N servers, no port binding
+  └─ BridgeServer (dist/bridge/BridgeServer.js) = WebSocket CLIENT
+       └─ ws://127.0.0.1:8120
+            └─ bridge-proxy-persistent.mjs = WebSocket SERVER (singleton, user-launched)
+                 └─ run_jsx_persistent.vbs (one long-lived cscript, stdin/stdout)
+                      └─ InDesign COM — ONE instance, ONE document set
+```
+
+Requests carry a UUID; responses route by ID, so multiple servers share one bridge safely.
+
 ## The protocol (unchanged — server side is platform-agnostic)
 
 1. Connect `ws://127.0.0.1:8120` (server greets with `{type:'connected', version}`).
@@ -22,74 +35,38 @@ interface** that InDesign exposes on Windows.
 4. Host → server: `{id, type:'success', result}` or `{id, type:'error', error}`.
 5. Ignore anything without `id` + `code` (heartbeats, acks).
 
-## The Windows host (replaces `bridge-proxy.mjs`)
+## Setup
 
-Same skeleton (WebSocket client + reconnect), one swapped exec layer:
+1. **Launch InDesign visibly** — `CreateObject("InDesign.Application")` binds to the running instance.
+2. **Start the bridge** (from the repo dir):
+   ```bash
+   node bridge-proxy-persistent.mjs
+   # → 🔄 Windows COM bridge (singleton server) listening on 127.0.0.1:8120
+   ```
+3. The bridge stays running. MCP server instances connect to it as clients.
+4. Register the MCP server in your client config (see README.md).
 
-```
-request {id, code, timeout}
-   └─► write code to temp .jsx in %TEMP%
-   └─► spawn: cscript //nologo run_jsx.vbs <temp.jsx>     (COM DoScript, proven)
-        OR in-process COM: winax → new ActiveXObject("InDesign.Application")
-                                → app.DoScript(code, 1246973031)
-   └─► capture stdout → {id, type:'success', result}
-   └─► on timeout: kill the cscript/InDesign-side call, reply error
-```
+**For AI agents:** the bridge is started by the host application. Do NOT start it yourself. Do NOT read bridge source code. Call `mcp_indesign_*` tools directly.
 
-`run_jsx.vbs` bridge (proven live):
+## Windows-specific pitfalls (all handled by the bridge)
 
-```vbscript
-' run_jsx.vbs — run any .jsx file inside InDesign via COM.
-' Usage: cscript //nologo run_jsx.vbs [path\to\script.jsx]
-Option Explicit
-Const JAVASCRIPT_LANG = 1246973031          ' DoScript language = JavaScript
-Dim fso, jsxFile, jsxText, inDesign
-Set fso = CreateObject("Scripting.FileSystemObject")
-If WScript.Arguments.Count > 0 Then jsxFile = WScript.Arguments(0)
-jsxText = fso.OpenTextFile(jsxFile, 1).ReadAll
-Set inDesign = CreateObject("InDesign.Application")
-inDesign.DoScript jsxText, JAVASCRIPT_LANG
-WScript.Sleep 3000
-Set inDesign = Nothing
-```
+1. **Dialogs hang the COM call.** Scripts set `app.scriptPreferences.userInteractionLevel = 1699311169` (NEVER_INTERACT) before any export/file operation.
+2. **CLI args don't run scripts:** `InDesign.exe script.jsx` and `-r` are silently ignored — COM is the only reliable bridge.
+3. **Recovery from hangs:** `taskkill /F /IM InDesign.exe`, relaunch; InDesign restores unsaved docs as "Untitled-N".
+4. **Timeout discipline:** honor the request `timeout` — kill the subprocess and reply `{type:'error'}`.
 
-Notes:
-- `1246973031` is the DoScript language constant for JavaScript (ExtendScript) —
-  the same constant the UXP plugin's fallback path already uses.
-- Do NOT put a hardcoded default script path in the committed bridge; resolve
-  paths from the request or `%TEMP%` at runtime.
+## InDesign 2026 API changes (fixed in bridge)
 
-## Windows-specific pitfalls (all proven in the field)
+| Issue | Fix |
+|-------|-----|
+| `UserInteractionLevel` enum undefined | Bridge wraps scripts with magic number `1699311169` |
+| `ColorModel.PROCESS_RGB` renamed to `ColorModel.PROCESS` (read-only) | Bridge reads the correct enum value at runtime |
+| `sanitizeCode()` mangles `eval(` in JSON polyfill | Polyfill now uses `[].constructor.constructor` |
+| `anchoredObject_create` — `move(InsertionPoint)` rejected | Handler adds item to `ip.ovals/rectangles/textFrames` directly |
 
-1. **Dialogs hang the COM call.** Every generated script must set
-   `app.scriptPreferences.userInteractionLevel = UserInteractionLevel.NEVER_INTERACT;`
-   before any export/file operation.
-2. **Short-lived scripts end with `app.quit()`** or the COM call blocks until
-   InDesign is killed. For the long-lived server, keep InDesign open and reuse
-   the COM instance; do not quit per request.
-3. **CLI args don't run scripts**: `InDesign.exe script.jsx` and `-r` are
-   silently ignored — COM is the only reliable bridge.
-4. **Recovery from hangs:** `taskkill //F //IM InDesign.exe`, relaunch; InDesign
-   restores unsaved docs as "Untitled-N" — saving those as IDML yields genuine
-   exports useful as XML structure references.
-5. **Quoting hell:** always write JSX to a temp file and feed contents to
-   `DoScript`; never inline ExtendScript through shell quoting.
-6. **Timeout discipline:** honor the request `timeout` — kill the subprocess
-   (child process tree) and reply `{type:'error'}`.
-7. **JSX errors** propagate back through `DoScript` with the InDesign error text
-   attached to the VBScript line number — no separate log needed.
+## What NOT to do (agents)
 
-## Port checklist
-
-- [ ] `bridge-proxy-win.mjs`: WebSocket client + temp-file cscript exec (or winax)
-- [ ] `run_jsx.vbs` committed WITHOUT machine-specific paths (resolve at runtime)
-- [ ] Timeout kill + reconnect logic
-- [ ] NEVER_INTERACT injection for export paths
-- [ ] Result round-trip verified against real InDesign (create doc → set text → export IDML/PDF)
-- [ ] `npm test` (server-side suite must stay green — it never touches InDesign)
-- [ ] Optional: `script_run()` tool works end-to-end from an MCP client
-
-## Out of scope / future
-
-- InDesign Server (headless) support — upstream roadmap, different COM surface.
-- CEP panel — not supported on InDesign 2026; COM is the supported path.
+- Do NOT read `dist/bridge/BridgeServer.js` to understand the setup
+- Do NOT run `echo "C:\path\check.jsx" | cscript //nologo run_jsx_persistent.vbs` to verify
+- Do NOT check session history to "figure out" how things were configured
+- Do NOT write custom verification scripts — use `mcp_indesign__document_getInfo` only
