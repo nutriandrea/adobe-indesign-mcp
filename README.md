@@ -151,6 +151,14 @@ Any MCP server instance (node dist/index.js …)     ← N servers, no port bind
 
 Requests carry a UUID; responses route by ID, so multiple servers share one bridge safely.
 
+### ⚠️ AI agents: use only the typed tools, never raw ExtendScript
+
+The server exposes **190 typed `mcp_indesign_*` tools** that wrap ExtendScript internally with timeouts and error handling. **Use only these.**
+
+**NEVER use `export_executeScript` or `script_run` for loops, font enumeration, multi-mutation probes, or any nontrivial script.** The bridge runs scripts through a single shared cscript process with no cancellation — a slow or hung script blocks every subsequent call indefinitely. There is no timeout recovery: the server stays wedged until the bridge is manually restarted.
+
+**COM property limitations in raw ExtendScript:** `fontFamily`, `italic`, `weight` all throw "does not support" — use `appliedFont` (returns `"Family\tStyle"`) and `fontStyle` instead.
+
 ### Setup (Windows)
 
 1. **Launch InDesign visibly** — `CreateObject("InDesign.Application")` binds to the running instance; without one, documents are created in a hidden window the user can't see.

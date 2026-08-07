@@ -35,6 +35,14 @@ Requests carry a UUID; responses route by ID, so multiple servers share one brid
 4. Host → server: `{id, type:'success', result}` or `{id, type:'error', error}`.
 5. Ignore anything without `id` + `code` (heartbeats, acks).
 
+## ⚠️ AI agents: use only typed tools, never raw ExtendScript
+
+NEVER use `export_executeScript` or `script_run` for loops, font enumeration, multi-mutation probes, or any nontrivial script. The bridge runs scripts through a single shared cscript process with no cancellation — a slow or hung script blocks every subsequent call indefinitely, and the server stays permanently wedged until the bridge is manually restarted.
+
+The typed `mcp_indesign_*` tools (`document_create`, `text_addFrame`, `style_createParagraph`, `shape_rectangle_create`, `font_list`, `table_setCell`, etc.) wrap the COM calls internally with proper timeout handling. Use those instead.
+
+**COM property limitations in raw ExtendScript:** `fontFamily`, `italic`, `weight` all throw "does not support" via COM — use `appliedFont` (returns `"Family\tStyle"`) and `fontStyle` on text objects instead.
+
 ## Setup
 
 1. **Launch InDesign visibly** — `CreateObject("InDesign.Application")` binds to the running instance.

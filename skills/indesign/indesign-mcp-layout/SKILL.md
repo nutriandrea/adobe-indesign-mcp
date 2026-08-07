@@ -1,37 +1,51 @@
 ---
 name: indesign-mcp-layout
-description: "Use when doing InDesign layout through MCP on Windows. Call mcp_indesign_* tools directly — do not start the bridge or read source code."
-version: 2.0.0
+description: "Use when doing InDesign layout through MCP on Windows. Call mcp_indesign_* tools directly — never use export_executeScript."
+version: 3.0.0
 platforms: [windows]
 ---
 
 # InDesign Layout Through MCP (Windows)
 
-**Context:** The `adobe-indesign-mcp` repo provides ~190 `mcp_indesign_*` tools via the Hermes MCP server. On Windows the tools communicate through a COM bridge that is started automatically by the host application (e.g. Hermes desktop app).
+**Context:** The `adobe-indesign-mcp` repo provides ~190 `mcp_indesign_*` tools via the Hermes MCP server. On Windows the tools communicate through a COM bridge started automatically by the host application.
 
-## How to Use
+## ⚠️ NEVER use `export_executeScript` or `script_run`
 
-**Call MCP tools directly. Do NOT:**
-- Start `bridge-proxy-persistent.mjs` yourself
-- Run cscript/VBS scripts
-- Read bridge source code
-- Check session history to "verify" setup
-- Write verification scripts
+These run raw ExtendScript through the singleton cscript process. **The server has no cancellation mechanism** — a slow/hung script blocks all subsequent calls permanently. A script that runs `app.fonts` enumeration, multi-mutation probes, or any loop over DOM objects will wedge the server indefinitely. Restarting the bridge is the only fix.
 
-**Do:**
-```
-mcp_indesign__document_create → mcp_indesign__page_add → mcp_indesign__shape_ellipse_create → etc.
-```
+**Always use the typed `mcp_indesign_*` tools.** They wrap the COM calls internally with proper timeouts and error handling.
 
-Use `mcp_indesign__document_getInfo` after changes to verify results.
+| What you might write raw ExtendScript for | Use this instead |
+|---|---|
+| Get document info | `mcp_indesign__document_getInfo` |
+| Enumerate fonts | `mcp_indesign__font_list` — for font details on a text frame: `mcp_indesign__text_getFormatting` |
+| Create document | `mcp_indesign__document_create` |
+| Add pages | `mcp_indesign__page_add` |
+| Create text frame | `mcp_indesign__text_addFrame` |
+| Create shapes | `mcp_indesign__shape_rectangle_create` / `shape_ellipse_create` |
+| Create colors | `mcp_indesign__color_swatch_create` |
+| Add/modify tables | `mcp_indesign__table_create` / `table_setCell` / `table_setRowColumnSize` |
+| Search/replace text | `mcp_indesign__grep_replace` / `text_findReplace` |
+| Create styles | `mcp_indesign__style_createParagraph` / `style_createCharacter` |
+| Apply styles to text | `mcp_indesign__text_applyParagraphStyle` / `text_applyFont` |
+| Read text content | `mcp_indesign__text_getContent` / `text_getFormatting` |
+| Export PDF | `mcp_indesign__export_document` |
 
-## Prerequisites
+## COM property surface (raw ExtendScript limitations)
 
-1. **InDesign must be visibly open** — `CreateObject("InDesign.Application")` binds to the running instance. Without it, documents are created in a hidden window.
-2. **Use `delivery_mode: 'foreground'`** for all MCP calls — background mode drops key events and makes it impossible to detect dialogs.
-3. **If a Missing Fonts dialog appears**, dismiss it with `computer_use` (foreground) before retrying.
+If you ever must use `export_executeScript` for a one-off read, note:
+- `fontFamily` → **DOES NOT WORK** (throws) — use `appliedFont` (returns `"Family\tStyle"`)
+- `italic`, `weight` → **DO NOT WORK** (throws) — use `fontStyle`
+- Works: `appliedFont`, `fontStyle`, `pointSize`, `contents`, `fillColor`, `justification`, `tracking`, `leading`
+- Font names use tab-separated format: `"Fraunces\tMedium"`, `"Jost\tSemiBold"` (InDesign 2026 variable fonts)
 
-## Page Sizes (in points for document creation)
+## Before any layout task
+
+1. **InDesign must be visibly open** — `CreateObject` binds to the running instance; if none is running, a hidden instance is created and documents are invisible to the user.
+2. **Use `delivery_mode: 'foreground'`** for all MCP tool calls — background mode drops key events and cannot detect dialogs.
+3. **If a Missing Fonts dialog appears**, dismiss with `computer_use` (foreground) then retry the MCP call.
+
+## Page sizes (in points for document creation)
 
 | Paper | Width × Height (pt) |
 |-------|---------------------|
@@ -40,23 +54,18 @@ Use `mcp_indesign__document_getInfo` after changes to verify results.
 | A3 | 842 × 1191 |
 | Landscape A4 | 842 × 595 |
 
-## Key InDesign 2026 Gotchas (all handled by the bridge)
+## Rules
 
-- `UserInteractionLevel` enum undefined — bridge wraps scripts with magic number `1699311169`
-- `ColorModel.PROCESS_RGB` renamed to `ColorModel.PROCESS` — bridge handles it
-- `anchoredObject_create`: InDesign 2026's `move()` rejects `InsertionPoint` — handler adds to `ip.ovals/rectangles/textFrames` directly
-
-## If Tools Fail
-
-1. Check InDesign is open and visible
-2. Check `delivery_mode` is `'foreground'`
-3. If error says "Bridge is not connected" — InDesign may have closed; reopen it and retry
-4. If error is `APIConnectionError` — model base_url may be `127.0.0.1`; change to the LAN IP
+- **NEVER run close-docs/cleanup scripts after a successful task** — it destroys the deliverable the user wants to see.
+- If tool error is "MCP server unreachable after N failures" — a raw ExtendScript call wedged the cscript; only restarting the bridge will fix it.
+- `working_dir` is not supported in MCP config; always use absolute Windows paths (`C:\Users\...`).
+- After any config change, re-verify `enabled: true` — config writers may overwrite it.
 
 ## What NOT to Do
 
+- Do NOT use `export_executeScript` for loops, enumerations, or multi-step mutations — wedges the server permanently
 - Do NOT start the bridge yourself — the host application starts it
-- Do NOT read `dist/bridge/BridgeServer.js` or any source code
-- Do NOT check session history to "verify" the setup
+- Do NOT read `dist/bridge/BridgeServer.js` or any source code to understand the setup
+- Do NOT check session history to verify how things were configured
 - Do NOT write custom verification scripts — use `mcp_indesign__document_getInfo` only
-- Do NOT close documents after a successful task — the user wants to see them
+- Do NOT close documents after a successful task
