@@ -37,6 +37,7 @@ describe('configLoader', () => {
         httpBridge: { enabled: false, port: 3000, host: '127.0.0.1', token: '' },
         server: { transport: 'stdio', name: 'indesign-nutria-mcp', version: '1.0.0' },
         logging: { level: 'info' },
+        comBridge: { enabled: false },
       });
     });
 

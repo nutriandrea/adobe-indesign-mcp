@@ -47,6 +47,9 @@ const mockConfig: AppConfig = {
   logging: {
     level: 'silent',
   },
+  comBridge: {
+    enabled: false,
+  },
 };
 
 describe('IndesignMcpServer Lifecycle', () => {
@@ -77,5 +80,37 @@ describe('IndesignMcpServer Lifecycle', () => {
     // ExpressBridgeServer.start() is mocked so it resolves
     // Stdio transport connect may fail, but that's a separate concern
     await expect(server.start()).resolves.not.toThrow();
+  });
+});
+
+describe('COM bridge opt-in', () => {
+  it('refuses to start with comBridge enabled on non-Windows platforms', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    try {
+      expect(
+        () =>
+          new IndesignMcpServer({
+            ...mockConfig,
+            comBridge: { enabled: true },
+          } as typeof mockConfig),
+      ).toThrow(/requires Windows/);
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    }
+  });
+
+  it('constructs the COM executor when enabled on win32', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    try {
+      const server = new IndesignMcpServer({
+        ...mockConfig,
+        comBridge: { enabled: true },
+      } as typeof mockConfig);
+      expect(server).toBeDefined();
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    }
   });
 });
