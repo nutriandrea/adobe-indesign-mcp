@@ -10,10 +10,19 @@ export class ScriptExecutor extends EventEmitter {
   private pending: Map<string, { resolve: (res: BridgeResponse) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }> = new Map();
   private defaultTimeout: number;
   private _undoGroupActive: boolean = false;
+  private _connected: boolean = false;
 
   constructor(defaultTimeout: number = 30000) {
     super();
     this.defaultTimeout = defaultTimeout;
+  }
+
+  /**
+   * Called by the BridgeServer when a plugin client connects or disconnects.
+   * Connection state is independent from the pending request queue.
+   */
+  setConnected(connected: boolean): void {
+    this._connected = connected;
   }
 
   get undoGroupActive(): boolean {
@@ -91,7 +100,7 @@ app.scriptPreferences.undoMode = UndoModes.FAST_ENTIRE_SCRIPT;`;
 
   getStatus(): BridgeStatus {
     return {
-      connected: this.pending.size > 0,
+      connected: this._connected,
       queueDepth: this.pending.size,
     };
   }
