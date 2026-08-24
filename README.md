@@ -261,12 +261,14 @@ node dist/index.js
 
 ---
 
-## 🆕 What's New (unreleased)
+## 🆕 What's New in v1.4.0
 
 | Change | What it means for you |
 |--------|----------------------|
 | **Agent vision: `preview_document`** | Render any page as an image the agent can actually see — layout mistakes get caught in the loop, not after export. |
+| **Batch PDF: `export_batchFolder`** | Export every `.indd` in a folder to PDF in one call, with per-file results. |
 | **Windows COM bridge** | Run with zero plugins via `COM_BRIDGE_ENABLED=true`. See [WINDOWS.md](WINDOWS.md). |
+| **Hardened file paths** | Every file-touching tool validates paths up front — traversal attempts (`..`) and system directories are rejected before InDesign ever sees them (now 11 guarded call sites). |
 
 <details>
 <summary>v1.3.0</summary>
