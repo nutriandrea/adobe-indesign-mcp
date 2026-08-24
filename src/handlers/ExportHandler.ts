@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { IHandler, ToolDefinition, ToolResult } from '../types/index.js';
 import { exportDocumentSchema, preflightSchema } from '../schemas/index.js';
 import { formatResponse } from '../utils/errorHandler.js';
+import { validateFilePath } from '../utils/security.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -22,6 +23,18 @@ export class ExportHandler implements IHandler {
         description: 'Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML, package)',
         inputSchema: exportDocumentSchema.shape,
         handler: compose(withLogging('export_document'), withErrorHandling())(this.export.bind(this)),
+      },
+      {
+        name: 'export_batchFolder',
+        description:
+          'Export every InDesign (.indd) file in a folder to PDF in one run — opens each document invisibly and reports per-file results',
+        inputSchema: {
+          folderPath: z.string().min(1).describe('Absolute folder containing .indd files'),
+          outputDir: z.string().optional().describe('Defaults to the same folder'),
+          overwrite: z.boolean().default(false),
+          timeoutMs: z.number().int().min(1000).default(300000),
+        },
+        handler: compose(withLogging('export_batchFolder'), withErrorHandling())(this.batchFolder.bind(this)),
       },
       {
         name: 'export_preflight',
@@ -107,6 +120,69 @@ export class ExportHandler implements IHandler {
     `;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);
+  }
+
+  private async batchFolder(args: unknown, _extra: any): Promise<ToolResult> {
+    const params = z
+      .object({
+        folderPath: z.string().min(1),
+        outputDir: z.string().optional(),
+        overwrite: z.boolean().default(false),
+        timeoutMs: z.number().int().min(1000).default(300000),
+      })
+      .parse(args);
+
+    const folderCheck = validateFilePath(params.folderPath);
+    if (!folderCheck.valid) {
+      return {
+        content: [{ type: 'text', text: `Invalid folder path: ${folderCheck.error}` }],
+        isError: true,
+      };
+    }
+    const outDir = params.outputDir ?? params.folderPath;
+    if (params.outputDir) {
+      const outCheck = validateFilePath(outDir);
+      if (!outCheck.valid) {
+        return {
+          content: [{ type: 'text', text: `Invalid output directory: ${outCheck.error}` }],
+          isError: true,
+        };
+      }
+    }
+
+    const code = `
+      var __batchResults = [];
+      var __folder = new Folder("${this.escape(params.folderPath)}");
+      var __outDir = "${this.escape(outDir)}";
+      app.scriptPreferences.userInteractionLevel = 1699311169; // NEVER_INTERACT
+      var __files = __folder.getFiles("*.indd");
+      for (var i = 0; i < __files.length; i++) {
+        var doc;
+        try {
+          doc = app.open(__files[i], false);
+          var baseName = __files[i].name.replace(/\.indd$/i, "");
+          var outFile = new File(__outDir + "/" + baseName + ".pdf");
+          doc.exportFile(ExportFormat.PDF_TYPE, outFile, ${params.overwrite});
+          doc.close(SaveOptions.NO_CHANGES);
+          __batchResults.push({ file: __files[i].name, ok: true });
+        } catch (__e) {
+          try { if (doc) doc.close(SaveOptions.NO_CHANGES); } catch (_ignored) {}
+          __batchResults.push({ file: __files[i].name, ok: false, error: String(__e.message || __e) });
+        }
+      }
+      JSON.stringify({ total: __files.length, results: __batchResults });
+    `;
+
+    try {
+      const response = await this.executor.execute(code, params.timeoutMs);
+      return formatResponse(response.result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        content: [{ type: 'text', text: `Batch export failed: ${message}` }],
+        isError: true,
+      };
+    }
   }
 
   private async preflight(args: unknown, _extra: any): Promise<ToolResult> {

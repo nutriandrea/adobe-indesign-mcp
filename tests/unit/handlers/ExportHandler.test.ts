@@ -18,9 +18,9 @@ describe('ExportHandler', () => {
       expect(handler.name).toBe('export');
     });
 
-    it('should expose 9 tools', () => {
+    it('should expose 10 tools', () => {
       const handler = new ExportHandler(createMockExecutor() as any);
-      expect(handler.tools).toHaveLength(9);
+      expect(handler.tools).toHaveLength(10);
     });
 
     it('should export all expected tools', () => {
@@ -222,5 +222,97 @@ describe('ExportHandler', () => {
       expect(mock.execute).toHaveBeenCalledWith('app.version');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
+  });
+});
+
+describe('export_batchFolder', () => {
+  function createMockExecutor() {
+    return {
+      execute: vi.fn().mockResolvedValue({
+        result: JSON.stringify([{ file: 'a.indd', ok: true }]),
+      }),
+      on: vi.fn(),
+    };
+  }
+
+  it('is exposed as the 10th export tool', () => {
+    const handler = new ExportHandler(createMockExecutor() as any);
+    expect(handler.tools.map((t) => t.name)).toContain('export_batchFolder');
+    expect(handler.tools).toHaveLength(10);
+  });
+
+  it('requires folderPath', async () => {
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+    // withErrorHandling converts validation failures into error results
+    const res = await tool.handler({});
+    expect(res.isError).toBe(true);
+    expect(executor.execute).not.toHaveBeenCalled();
+  });
+
+  it('sends a loop script over *.indd with invisible open, PDF export and NO_CHANGES close', async () => {
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+
+    await tool.handler({ folderPath: '/docs/in', outputDir: '/docs/out' });
+
+    const [code, timeout] = executor.execute.mock.calls[0];
+    expect(code).toContain('new Folder("/docs/in")');
+    expect(code).toContain('"*.indd"');
+    expect(code).toContain('PDF_TYPE');
+    expect(code).toContain('NO_CHANGES');
+    expect(timeout).toBe(300000);
+  });
+
+  it('escapes paths to prevent ExtendScript injection', async () => {
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+
+    await tool.handler({ folderPath: '/da"ta' });
+
+    const [code] = executor.execute.mock.calls[0];
+    expect(code).not.toContain('/da"ta');
+    expect(code).toContain('\\"');
+  });
+
+  it('honors a custom timeout for large batches', async () => {
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+
+    await tool.handler({ folderPath: '/x', timeoutMs: 900000 });
+    expect(executor.execute.mock.calls[0][1]).toBe(900000);
+  });
+
+  it('surfaces per-file failures returned by the script', async () => {
+    const executor = createMockExecutor();
+    executor.execute.mockResolvedValue({
+      result: JSON.stringify([
+        { file: 'ok.indd', ok: true },
+        { file: 'bad.indd', ok: false, error: 'damaged' },
+      ]),
+    });
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+    const res = await tool.handler({ folderPath: '/x' });
+
+    expect(res.isError).toBeUndefined();
+    const parsed = JSON.parse(res.content[0].text);
+    expect(parsed).toHaveLength(2);
+    expect(parsed[1].ok).toBe(false);
+  });
+
+  it('returns an error result when execution fails', async () => {
+    const executor = createMockExecutor();
+    executor.execute.mockRejectedValue(new Error('Bridge is not connected'));
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
+    const res = await tool.handler({ folderPath: '/x' });
+
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res.content)).toContain('Bridge is not connected');
   });
 });
