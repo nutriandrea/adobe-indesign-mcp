@@ -2,9 +2,7 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import type { BridgeRequest, BridgeResponse, BridgeStatus } from '../types/index.js';
 import { InDesignError } from '../utils/errorHandler.js';
-import { sanitizeCode } from '../utils/stringUtils.js';
-import { JSON_POLYFILL } from './jsonPolyfill.js';
-import { getExtendScriptHelpers } from './extendScriptHelpers.js';
+import { wrapExtendScript } from './wrapExtendScript.js';
 
 export class ScriptExecutor extends EventEmitter {
   private pending: Map<string, { resolve: (res: BridgeResponse) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }> = new Map();
@@ -42,28 +40,10 @@ export class ScriptExecutor extends EventEmitter {
     timeout?: number,
     debug?: boolean,
   ): Promise<BridgeResponse> {
-    const helpers = getExtendScriptHelpers();
-    const polyfilled = JSON_POLYFILL + '\n' + helpers;
-
-    let wrapped = code;
-
-    if (debug) {
-      wrapped = `
-try {
-  ${code}
-} catch(e) {
-  JSON.stringify({ __extendscript_error: true, message: e.message, line: e.line, fileName: e.fileName, stack: e.stack });
-}`;
-    }
-
-    if (this._undoGroupActive) {
-      wrapped = `
-app.scriptPreferences.undoMode = UndoModes.ENTIRE_SCRIPT;
-${wrapped}
-app.scriptPreferences.undoMode = UndoModes.FAST_ENTIRE_SCRIPT;`;
-    }
-
-    const fullCode = polyfilled + '\n' + sanitizeCode(wrapped);
+    const fullCode = wrapExtendScript(code, {
+      debug,
+      undoGroupActive: this._undoGroupActive,
+    });
     const id = uuidv4();
     const request: BridgeRequest = {
       id,
