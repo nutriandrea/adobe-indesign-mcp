@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **`preview_document` now actually works against real InDesign 2026** (verified end-to-end on a live instance): the generated script used the non-existent `resolutionPpi` preference (correct property is `exportResolution`, a plain PPI number), called `Page.exportFile` which doesn't exist in this DOM (now exports the document with `pageString` taken from the target page's own name, so section numbering is respected), and ended with `JSON.stringify(...)`, which throws in ExtendScript's ES3 engine
+- **Change-event heartbeat**: consecutive unsaved edits leave the name/modified signature unchanged, so the plugin now re-emits `document_changed` every ~30s while the document is dirty instead of going silent after the first notification
+
+### Added
+- Plugin bundle guards: unit tests parse `plugin/index.js` with Node and assert the embedded signature script stays ES3-safe (no `JSON.*`, no backslash literals) — the multi-layer escaping regression that silently corrupted the file can't ship again
+
 ## [1.4.0] - 2026-08-24
 
 ### Security
