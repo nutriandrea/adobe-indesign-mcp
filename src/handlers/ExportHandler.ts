@@ -7,6 +7,7 @@ import { withLogging, withErrorHandling, compose } from '../utils/middleware.js'
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { escapeExtendScriptString } from "../utils/stringUtils.js";
+import { filePathError } from '../utils/security.js';
 
 export class ExportHandler implements IHandler {
   public readonly name = 'export';
@@ -111,7 +112,16 @@ export class ExportHandler implements IHandler {
       png: 'ExportFormat.PNG_FORMAT',
       package: 'ExportFormat.PACKAGE',
     };
-    const exportFormat = formatMap[params.format];
+    
+    const resolvedPathError = filePathError(params.filePath || `~/Desktop/export.${params.format}`);
+    if (resolvedPathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${resolvedPathError}` }],
+        isError: true,
+      };
+    }
+
+const exportFormat = formatMap[params.format];
     const filePath = params.filePath || `~/Desktop/export.${params.format}`;
     const escPath = this.escape(filePath);
     const code = `

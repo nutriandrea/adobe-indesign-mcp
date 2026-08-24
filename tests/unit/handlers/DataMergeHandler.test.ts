@@ -276,4 +276,18 @@ describe('DataMergeHandler', () => {
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
   });
+
+
+describe('path hardening', () => {
+  it('rejects traversal and system paths before touching the executor', async () => {
+    const executor = createMockExecutor();
+    const handler = new DataMergeHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'dataMerge_selectDataSource')!;
+    for (const bad of ['../../etc/passwd', '/etc/hosts', 'C:\\Windows\\System32\\x.png']) {
+      const res = await tool.handler({ filePath: bad, ...{} });
+      expect(res.isError, `expected isError for ${bad}`).toBe(true);
+      expect(executor.execute, `executor must not run for ${bad}`).not.toHaveBeenCalled();
+    }
+  });
+});
 });

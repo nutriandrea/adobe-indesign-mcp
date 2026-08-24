@@ -5,6 +5,7 @@ import { withLogging, withErrorHandling, compose } from '../utils/middleware.js'
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { escapeExtendScriptString } from "../utils/stringUtils.js";
+import { filePathError } from '../utils/security.js';
 
 export class DataMergeHandler implements IHandler {
   public readonly name = 'dataMerge';
@@ -75,6 +76,14 @@ export class DataMergeHandler implements IHandler {
     }).parse(args as Record<string, unknown>);
 
     const escPath = this.escape(params.filePath);
+    const __pathError = filePathError(params.filePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const code = `
       var doc = app.activeDocument;
       var dm = doc.dataMergeProperties;
@@ -131,6 +140,14 @@ export class DataMergeHandler implements IHandler {
     }).parse(args as Record<string, unknown>);
 
     const escPath = this.escape(params.outputPath);
+    const __pathError = filePathError(params.outputPath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const formatMap: Record<string, string> = {
       pdf: 'ExportFormat.pdfType',
       jpg: 'ExportFormat.jpgType',
