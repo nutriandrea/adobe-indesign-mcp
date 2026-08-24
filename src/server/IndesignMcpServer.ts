@@ -170,9 +170,9 @@ export class IndesignMcpServer {
     }
 
     if (this.config.httpBridge.enabled) {
-      const token = this.config.httpBridge.token || process.env.BRIDGE_TOKEN || '';
+      // Token resolution (env included) is handled by loadConfig
       this.expressBridgeServer = new ExpressBridgeServer(
-        { ...this.config.httpBridge, token },
+        this.config.httpBridge,
         this.executor,
       );
       await this.expressBridgeServer.start();

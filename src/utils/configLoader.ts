@@ -59,24 +59,89 @@ const defaultConfig: AppConfig = {
 };
 
 export function loadConfig(configPath?: string): AppConfig {
+  let base: AppConfig = defaultConfig;
+
   if (configPath && existsSync(resolve(configPath))) {
     try {
       const raw = JSON.parse(readFileSync(resolve(configPath), 'utf-8'));
-      return configSchema.parse(raw);
+      base = configSchema.parse(raw);
     } catch (err) {
       console.warn(`Config load failed at ${configPath}, using defaults:`, err);
-      return defaultConfig;
     }
-  }
-
-  if (existsSync(resolve('indesign-nutria-mcp.json'))) {
+  } else if (existsSync(resolve('indesign-nutria-mcp.json'))) {
     try {
       const raw = JSON.parse(readFileSync(resolve('indesign-nutria-mcp.json'), 'utf-8'));
-      return configSchema.parse(raw);
+      base = configSchema.parse(raw);
     } catch {
-      return defaultConfig;
+      base = defaultConfig;
     }
   }
 
-  return defaultConfig;
+  return applyEnvOverrides(base);
+}
+
+// ── Environment variable overrides ──
+// Precedence: environment > JSON config file > defaults.
+// Invalid or empty values are ignored so a bad export can never wedge startup.
+
+function envStr(name: string): string | undefined {
+  const v = process.env[name];
+  return v !== undefined && v !== '' ? v : undefined;
+}
+
+function envInt(name: string): number | undefined {
+  const v = envStr(name);
+  if (v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
+function envBool(name: string): boolean | undefined {
+  const v = envStr(name);
+  if (v === undefined) return undefined;
+  if (v === 'true' || v === '1') return true;
+  if (v === 'false' || v === '0') return false;
+  return undefined;
+}
+
+function applyEnvOverrides(base: AppConfig): AppConfig {
+  const merged: AppConfig = {
+    bridge: {
+      ...base.bridge,
+      ...(envInt('BRIDGE_PORT') !== undefined && { port: envInt('BRIDGE_PORT') }),
+      ...(envStr('BRIDGE_HOST') !== undefined && { host: envStr('BRIDGE_HOST') }),
+      ...(envInt('BRIDGE_MAX_PAYLOAD') !== undefined && { maxPayload: envInt('BRIDGE_MAX_PAYLOAD') }),
+      ...(envInt('BRIDGE_TIMEOUT') !== undefined && { timeout: envInt('BRIDGE_TIMEOUT') }),
+    },
+    httpBridge: {
+      ...base.httpBridge,
+      ...(envBool('HTTP_BRIDGE_ENABLED') !== undefined && { enabled: envBool('HTTP_BRIDGE_ENABLED') }),
+      ...(envInt('HTTP_BRIDGE_PORT') !== undefined && { port: envInt('HTTP_BRIDGE_PORT') }),
+      ...(envStr('HTTP_BRIDGE_HOST') !== undefined && { host: envStr('HTTP_BRIDGE_HOST') }),
+      ...(envStr('BRIDGE_TOKEN') !== undefined && { token: envStr('BRIDGE_TOKEN') }),
+    },
+    server: {
+      ...base.server,
+      ...(envStr('SERVER_TRANSPORT') === 'stdio' || envStr('SERVER_TRANSPORT') === 'websocket'
+        ? { transport: envStr('SERVER_TRANSPORT') as 'stdio' | 'websocket' }
+        : {}),
+      ...(envStr('SERVER_NAME') !== undefined && { name: envStr('SERVER_NAME') }),
+      ...(envStr('SERVER_VERSION') !== undefined && { version: envStr('SERVER_VERSION') }),
+    },
+    logging: {
+      ...base.logging,
+      ...(envStr('LOG_LEVEL_OVERRIDE') !== undefined &&
+      ['debug', 'info', 'warn', 'error'].includes(envStr('LOG_LEVEL_OVERRIDE')!)
+        ? { level: envStr('LOG_LEVEL_OVERRIDE') as AppConfig['logging']['level'] }
+        : {}),
+      ...(!envStr('LOG_LEVEL_OVERRIDE') &&
+      envStr('LOG_LEVEL') !== undefined &&
+      ['debug', 'info', 'warn', 'error'].includes(envStr('LOG_LEVEL')!)
+        ? { level: envStr('LOG_LEVEL') as AppConfig['logging']['level'] }
+        : {}),
+    },
+  };
+
+  // Final validation guarantees the shape even if env parsing drifted.
+  return configSchema.parse(merged);
 }
