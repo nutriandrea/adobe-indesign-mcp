@@ -77,14 +77,18 @@ export class PreviewHandler implements IHandler {
     const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
 
     const prefLine = isJpeg
-      ? `app.jpegExportPreferences.resolutionPpi = ${params.resolutionPpi};`
-      : `app.pngExportPreferences.resolutionPpi = ${params.resolutionPpi};`;
+      ? `app.jpegExportPreferences.exportResolution = ${params.resolutionPpi};`
+      : `app.pngExportPreferences.exportResolution = ${params.resolutionPpi};`;
 
+    // InDesign 2026 DOM: Page has no exportFile — export the DOCUMENT with a
+    // pageString taken from the target page's own name (section-aware).
     const code = `
-      var __previewPage = app.activeDocument.pages[${params.pageIndex}];
+      var __doc = app.activeDocument;
+      var __page = __doc.pages[${params.pageIndex}];
       ${prefLine}
-      __previewPage.exportFile(ExportFormat.${isJpeg ? 'JPEG_FORMAT' : 'PNG_FORMAT'}, File(${JSON.stringify(tempPath)}));
-      JSON.stringify({ ok: true });
+      app.${isJpeg ? 'jpeg' : 'png'}ExportPreferences.pageString = __page.name;
+      __doc.exportFile(ExportFormat.${isJpeg ? 'JPEG_FORMAT' : 'PNG_FORMAT'}, File(${JSON.stringify(tempPath)}));
+      'ok';
     `;
 
     try {

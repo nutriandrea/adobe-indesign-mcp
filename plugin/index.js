@@ -20,15 +20,23 @@
   let changePollTimer = null;
   let lastDocSignature = null;
   const CHANGE_POLL_MS = 5000;
+  const HEARTBEAT_POLLS = 6; // ~30s: re-notify while document stays modified
+  let pollsSinceLastEvent = 0;
 
-  // ExtendScript is ES3: no JSON object. Serialize manually.
+  // ExtendScript is ES3: no JSON object, and escape-heavy string literals have
+  // proven fragile across tooling layers. The script below therefore contains
+  // ONLY single-quoted strings and String.fromCharCode() — no backslashes, no
+  // double quotes — so it is immune to any quoting layer between here and InDesign.
   const DOC_SIGNATURE_SCRIPT =
-    '(function(){function esc(s){return String(s).replace(/\\\\/g,"\\\\\\\\").replace(/"/g,"\\\\"");}' +
+    '(function(){' +
+    'function q(n){return String.fromCharCode(n);}' +
+    'function esc(s){var t=String(s);t=t.split(q(92)).join(q(92)+q(92));t=t.split(q(34)).join(q(92)+q(34));return t;}' +
     'try{var n=app.documents.length;' +
-    'if(!n){return "{\\"docs\\":0}";}' +
+    "if(!n){return q(123)+q(34)+'docs'+q(34)+q(58)+'0'+q(125);}" +
     'var d=app.activeDocument;' +
-    'return "{\\"docs\\":"+n+",\\"name\\":\\""+esc(d.name)+"\\",\\"modified\\":"+(d.modified?"true":"false")+"}";' +
-    '}catch(e){return "{\\"error\\":\\""+esc(String(e))+"\\"}";}})()';
+    "return q(123)+q(34)+'docs'+q(34)+q(58)+n+','+q(34)+'name'+q(34)+q(58)+q(34)+esc(d.name)+q(34)+','+q(34)+'modified'+q(34)+q(58)+(d.modified?'true':'false')+q(125);" +
+    "}catch(e){return q(123)+q(34)+'error'+q(34)+q(58)+q(34)+esc(String(e))+q(34)+q(125);}" +
+    '})()';
 
   function sendEvent(name, payload) {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -43,19 +51,27 @@
   function startChangePolling() {
     if (changePollTimer) return;
     lastDocSignature = null;
+    pollsSinceLastEvent = 0;
     changePollTimer = setInterval(async function () {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
       try {
         const raw = await runExtendScript(DOC_SIGNATURE_SCRIPT);
         const sig = raw !== null && raw !== undefined ? String(raw) : 'null';
-        if (sig !== lastDocSignature) {
+        let payload = {};
+        try {
+          payload = JSON.parse(sig);
+        } catch (e) {
+          /* keep empty payload */
+        }
+        // While the document sits in a modified state the signature stops
+        // changing (docs/name/modified are stable), so consecutive unsaved
+        // edits would be invisible. Send a periodic heartbeat instead —
+        // false positives just make agents re-render, never stale.
+        pollsSinceLastEvent++;
+        var isHeartbeat = payload.modified === true && pollsSinceLastEvent >= HEARTBEAT_POLLS;
+        if (sig !== lastDocSignature || isHeartbeat) {
           lastDocSignature = sig;
-          let payload = {};
-          try {
-            payload = JSON.parse(sig);
-          } catch (e) {
-            /* keep empty payload */
-          }
+          pollsSinceLastEvent = 0;
           sendEvent('document_changed', payload);
           logEntry('info', 'Change event sent (' + sig.slice(0, 60) + ')');
         }

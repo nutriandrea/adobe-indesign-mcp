@@ -31,10 +31,16 @@ describe('PreviewHandler', () => {
     await tool.handler({ pageIndex: 2, resolutionPpi: 300 });
 
     const [code] = executor.execute.mock.calls[0];
-    expect(code).toContain('pages[2]');
-    expect(code).toContain('300');
+    // InDesign 2026 DOM: Document.exportFile + pageString (Page has no
+    // exportFile method); resolution lives in exportResolution (plain ppi)
+    expect(code).toContain('__doc.pages[2]');
+    expect(code).toContain('pageString = __page.name');
+    expect(code).toContain('__doc.exportFile(ExportFormat.PNG_FORMAT');
+    expect(code).toContain('exportResolution = 300');
+    expect(code).not.toContain('resolutionPpi');
+    expect(code).not.toContain('JSON.stringify');
+    expect(code).not.toContain('__previewPage');
     expect(code).toContain('/tmp/prev-test.png');
-    expect(code).toContain('PNG_FORMAT');
   });
 
   it('returns an MCP image content block built from the exported file', async () => {
