@@ -404,4 +404,62 @@ describe('fast-fail when disconnected', () => {
     await expect(p).resolves.toEqual({ id: sent.id, type: 'result', result: '2' });
   });
 });
+
+  describe('plugin events', () => {
+    const getConnectionHandler = () =>
+      mockWssOn.mock.calls.find((c) => c[0] === 'connection')?.[1] as
+        | ((ws: MockWs) => void)
+        | undefined;
+
+    it('routes type:event messages to the events emitter, not the executor', async () => {
+      await bridgeServer.start();
+      const ws = createMockWs();
+      getConnectionHandler()!(ws);
+
+      const spy = vi.fn();
+      bridgeServer.events.on('document_changed', spy);
+      const handleResponseSpy = vi.spyOn(executor, 'handleResponse');
+
+      ws.emit(
+        'message',
+        Buffer.from(
+          JSON.stringify({ type: 'event', name: 'document_changed', payload: { modified: true } }),
+        ),
+      );
+
+      expect(spy).toHaveBeenCalledWith({ modified: true });
+      expect(handleResponseSpy).not.toHaveBeenCalled();
+    });
+
+    it('ignores event messages without a name', async () => {
+      await bridgeServer.start();
+      const ws = createMockWs();
+      getConnectionHandler()!(ws);
+
+      const anySpy = vi.fn();
+      bridgeServer.events.on('document_changed', anySpy);
+
+      expect(() =>
+        ws.emit('message', Buffer.from(JSON.stringify({ type: 'event', payload: {} }))),
+      ).not.toThrow();
+      expect(anySpy).not.toHaveBeenCalled();
+    });
+
+    it('supports multiple listeners on the same event', async () => {
+      await bridgeServer.start();
+      const ws = createMockWs();
+      getConnectionHandler()!(ws);
+
+      const a = vi.fn();
+      const b = vi.fn();
+      bridgeServer.events.on('document_changed', a);
+      bridgeServer.events.on('document_changed', b);
+
+      ws.emit('message', Buffer.from(JSON.stringify({ type: 'event', name: 'document_changed' })));
+
+      expect(a).toHaveBeenCalledTimes(1);
+      expect(b).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+

@@ -7,7 +7,7 @@
 
 <p align="center">
   <b>Say "Create an A4 document with 5 pages, add a red circle on page 3" — and it happens.</b><br>
-  <i>The most comprehensive MCP server for Adobe InDesign. 193 tools. 32 handlers. Full DOM coverage.</i>
+  <i>The most comprehensive MCP server for Adobe InDesign. 194 tools. 33 handlers. Full DOM coverage.</i>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat&logo=npm&label=version&color=7c3aed" alt="npm version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tools-193-7c3aed?style=flat" alt="tools"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tools-194-7c3aed?style=flat" alt="tools"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-747-22c55e?style=flat" alt="tests"></a>
   <a href="#"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
@@ -42,14 +42,14 @@ This MCP server fixes that. One `npm install` and your AI agent controls InDesig
 |---|---|---|---|---|---|
 | **Learn in** | 30 seconds | 3 weeks | 2 months | 1 month | 0 (slow) |
 | **AI-native** | ✅ Any MCP agent | ❌ | ❌ | ❌ | ❌ |
-| **Tool count** | **193** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
+| **Tool count** | **194** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
 | **Error messages** | Human-readable | Opaque crashes | Varies | Better | N/A |
 | **Setup time** | 5 minutes | 10 minutes | 2 hours | 30 minutes | Instant |
 | **Undo support** | ✅ Built-in | ❌ | Varies | ❌ | ✅ |
 | **Search text** | `text_search("pattern")` | Write 50 lines | Maybe | Maybe | Ctrl+F |
 | **Debug mode** | ✅ Stack traces | ❌ | Varies | Limited | N/A |
 | **Remote control** | ✅ Anywhere STDIO works | ❌ InDesign-only | ❌ | ❌ | N/A |
-| **Maintenance** | Zero (we handle 193 tools) | You write+test everything | Fragile | Fragile | N/A |
+| **Maintenance** | Zero (we handle 194 tools) | You write+test everything | Fragile | Fragile | N/A |
 
 ---
 
@@ -131,7 +131,7 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 │  Any AI Agent       │ ◄────────────────► │  indesign-nutria-mcp │ ◄───────────────► │  Adobe InDesign   │
 │  (Claude, OpenCode, │                    │  (Node.js MCP Server) │     port 8120     │  + UXP Plugin     │
 │   Cursor, etc.)     │                    │  31 handlers         │                    │  + ExtendScript    │
-└─────────────────────┘                    │  193 tools           │                    └──────────────────┘
+└─────────────────────┘                    │  194 tools           │                    └──────────────────┘
                                            │  10 AI skills        │
                                            └──────────────────────┘
 ```
@@ -178,7 +178,7 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 |---|---|
 | `mcp://session/status` | Active document session state |
 | `mcp://bridge/status` | WebSocket bridge health + queue depth |
-| `mcp://tools/inventory` | Full 193-tool catalog for agent self-discovery |
+| `mcp://tools/inventory` | Full 194-tool catalog for agent self-discovery |
 | `mcp://document/active` | Currently active document info |
 
 ---
