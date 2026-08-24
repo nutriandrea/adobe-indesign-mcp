@@ -4,6 +4,7 @@ import { formatResponse } from '../utils/errorHandler.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { escapeExtendScriptString } from "../utils/stringUtils.js";
 
 export class ImageHandler implements IHandler {
   public readonly name = 'image';
@@ -78,7 +79,7 @@ export class ImageHandler implements IHandler {
   }
 
   private escape(str: string): string {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return escapeExtendScriptString(str);
   }
 
   private async placeImage(args: unknown, _extra: any): Promise<ToolResult> {
