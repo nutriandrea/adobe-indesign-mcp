@@ -178,5 +178,16 @@ describe('path hardening', () => {
       expect(executor.execute, `executor must not run for ${bad}`).not.toHaveBeenCalled();
     }
   });
+
+  it('xml_importXml rejects traversal and system paths before touching the executor', async () => {
+    const executor = createMockExecutor();
+    const handler = new XmlHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'xml_import')!;
+    for (const bad of ['../../etc/passwd', '/etc/hosts', 'C:\\Windows\\System32\\x.xml']) {
+      const res = await tool.handler({ filePath: bad, ...{} });
+      expect(res.isError, `expected isError for ${bad}`).toBe(true);
+      expect(executor.execute, `executor must not run for ${bad}`).not.toHaveBeenCalled();
+    }
+  });
 });
 });
