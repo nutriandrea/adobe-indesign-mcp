@@ -367,18 +367,18 @@ describe('BridgeServer', () => {
       expect(ws.send).toHaveBeenCalledTimes(1); // only connected message
     });
   });
-});
 
 describe('fast-fail when disconnected', () => {
   it('should reject requests immediately when no bridge client is connected', async () => {
     vi.useFakeTimers();
     await bridgeServer.start();
 
-    const p = executor.execute('app.documents.length;', 30000);
+    // Short timeout so RED fails fast with a clear message mismatch;
+    // GREEN must reject well before any timer fires.
+    const p = executor.execute('app.documents.length;', 100);
     const expectation = expect(p).rejects.toThrow(/not connected/i);
 
-    // Fast-fail means rejection happens right away — not after the 30s timeout
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(200);
     await expectation;
   });
 
@@ -394,10 +394,12 @@ describe('fast-fail when disconnected', () => {
 
     const p = executor.execute('1 + 1;');
     await vi.advanceTimersByTimeAsync(0);
-    expect(ws.send).toHaveBeenCalledWith(expect.stringContaining('"id"'));
+    // calls[0] is the 'connected' greeting; the routed request follows
+    expect(ws.send).toHaveBeenCalledTimes(2);
 
-    const sent = JSON.parse(ws.send.mock.calls[0][0] as string);
+    const sent = JSON.parse(ws.send.mock.calls[1][0] as string);
     executor.handleResponse({ id: sent.id, type: 'result', result: '2' });
     await expect(p).resolves.toEqual({ id: sent.id, type: 'result', result: '2' });
   });
+});
 });
