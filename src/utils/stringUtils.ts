@@ -1,3 +1,11 @@
+export function escapeExtendScriptString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+}
+
 export function escapeJsxString(str: string): string {
   return str
     .replace(/\\/g, '\\\\')
