@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DocumentHandler` migrated to the canonical ExtendScript escaper (last two inline implementations)
 
 ### Added
-- **Live change events**: the plugin pushes `document_changed` over the bridge whenever the active document state shifts (open/close, modified flag); new `changes_getStatus` tool lets agents ask "did anything change since T?" without touching InDesign — the cheap guard for preview loops
+- **Live change events**: the plugin pushes `document_changed` over the bridge whenever the active document state shifts (open/close, modified flag); signature script is ES3-safe (ExtendScript has no JSON object); new `changes_getStatus` tool lets agents ask "did anything change since T?" without touching InDesign — the cheap guard for preview loops
 - **`export_batchFolder`**: export every `.indd` file in a folder to PDF in one call, with per-file success/failure results and path validation
 - **`preview_document`**: renders any page to PNG/JPEG and returns it as an MCP image block, giving agents visual feedback on their layouts
 - **Windows support via opt-in COM bridge**: drive InDesign with no UXP plugin using a persistent `cscript` host (`COM_BRIDGE_ENABLED=true`); macOS default path untouched, non-Windows startup fails fast with a clear message
