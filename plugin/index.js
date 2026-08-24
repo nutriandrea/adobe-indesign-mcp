@@ -224,7 +224,7 @@
       if (ws && ws.readyState === WebSocket.OPEN) {
         disconnect();
       } else {
-        const url = serverUrlInput.value.trim() || 'ws://localhost:3001';
+        const url = serverUrlInput.value.trim() || 'ws://localhost:8120';
         connect(url);
       }
     });

@@ -51,6 +51,7 @@ export class BridgeServer {
         this.connections.add(ws);
         this.lastActivity.set(ws, Date.now());
         this._connected = true;
+        this.executor.setConnected(true);
         logger.info('Bridge client connected');
 
         ws.on('message', (raw) => {
@@ -68,6 +69,7 @@ export class BridgeServer {
           this.lastActivity.delete(ws);
           if (this.connections.size === 0) {
             this._connected = false;
+            this.executor.setConnected(false);
           }
           logger.info('Bridge client disconnected');
         });
@@ -78,6 +80,7 @@ export class BridgeServer {
           this.lastActivity.delete(ws);
           if (this.connections.size === 0) {
             this._connected = false;
+            this.executor.setConnected(false);
           }
         });
 
@@ -100,6 +103,7 @@ export class BridgeServer {
     this.connections.clear();
     this.lastActivity.clear();
     this._connected = false;
+    this.executor.setConnected(false);
 
     if (this.wss) {
       this.wss.close();

@@ -84,6 +84,27 @@ describe('ScriptExecutor', () => {
     expect(status.queueDepth).toBe(0);
   });
 
+  it('should report connected=false by default, not tied to pending queue', () => {
+    expect(executor.getStatus().connected).toBe(false);
+  });
+
+  it('should reflect connection state set via setConnected', () => {
+    executor.setConnected(true);
+    expect(executor.getStatus().connected).toBe(true);
+
+    executor.setConnected(false);
+    expect(executor.getStatus().connected).toBe(false);
+  });
+
+  it('should keep connected independent from pending queue depth', async () => {
+    executor.setConnected(true);
+    const p = executor.execute('code');
+    expect(executor.getStatus()).toEqual({ connected: true, queueDepth: 1 });
+    executor.cancelAll();
+    await expect(p).rejects.toThrow('Execution cancelled');
+    expect(executor.getStatus()).toEqual({ connected: true, queueDepth: 0 });
+  });
+
   it('should cancel all pending executions', async () => {
     const p1 = executor.execute('code1');
     const p2 = executor.execute('code2');

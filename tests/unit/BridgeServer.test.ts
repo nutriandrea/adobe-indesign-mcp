@@ -267,6 +267,20 @@ describe('BridgeServer', () => {
       expect(status.queueDepth).toBe(1);
       expect(status.connected).toBe(false);
     });
+
+    it('should propagate bridge connection state to executor', async () => {
+      await bridgeServer.start();
+
+      const ws = createMockWs();
+      const connectionHandler = mockWssOn.mock.calls.find(
+        (c) => c[0] === 'connection',
+      )?.[1] as ((ws: MockWs) => void) | undefined;
+      connectionHandler!(ws);
+      expect(executor.getStatus().connected).toBe(true);
+
+      ws.emit('close', 1000, Buffer.from(''));
+      expect(executor.getStatus().connected).toBe(false);
+    });
   });
 
   describe('health checks', () => {
