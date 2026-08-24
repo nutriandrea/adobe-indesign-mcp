@@ -1,4 +1,5 @@
 import { createServer, type Server } from 'http';
+import { EventEmitter } from 'events';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { BridgeResponse, BridgeStatus } from '../types/index.js';
 import { ScriptExecutor } from './ScriptExecutor.js';
@@ -24,6 +25,8 @@ export class BridgeServer {
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
   private lastActivity: Map<WebSocket, number> = new Map();
   private _connected: boolean = false;
+  /** Unsolicited plugin-pushed events, e.g. 'document_changed' */
+  readonly events: EventEmitter = new EventEmitter();
 
   constructor(options: BridgeServerOptions, executor: ScriptExecutor) {
     this.options = options;
@@ -69,8 +72,13 @@ export class BridgeServer {
         ws.on('message', (raw) => {
           this.lastActivity.set(ws, Date.now());
           try {
-            const response: BridgeResponse = JSON.parse(raw.toString());
-            this.executor.handleResponse(response);
+            const parsed = JSON.parse(raw.toString());
+            if (parsed && parsed.type === 'event' && typeof parsed.name === 'string') {
+              // Unsolicited plugin event — not a response to any pending request.
+              this.events.emit(parsed.name, parsed.payload ?? {});
+              return;
+            }
+            this.executor.handleResponse(parsed as BridgeResponse);
           } catch (err) {
             logger.error('Invalid bridge message', { error: err instanceof Error ? err.message : String(err) });
           }

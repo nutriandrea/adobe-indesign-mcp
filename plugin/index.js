@@ -16,6 +16,61 @@
   const MAX_RECONNECT_ATTEMPTS = 20;
   const RECONNECT_DELAY_MS = 3000;
 
+  // ── Change-event polling ──
+  let changePollTimer = null;
+  let lastDocSignature = null;
+  const CHANGE_POLL_MS = 5000;
+
+  const DOC_SIGNATURE_SCRIPT =
+    '(function(){try{var n=app.documents.length;' +
+    'if(!n){return JSON.stringify({docs:0});}' +
+    'var d=app.activeDocument;' +
+    'return JSON.stringify({docs:n,name:d.name,modified:d.modified});' +
+    '}catch(e){return JSON.stringify({error:String(e)});}})()';
+
+  function sendEvent(name, payload) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ type: 'event', name: name, payload: payload }));
+      } catch (err) {
+        logEntry('error', 'Failed to send event: ' + err.message);
+      }
+    }
+  }
+
+  function startChangePolling() {
+    if (changePollTimer) return;
+    lastDocSignature = null;
+    changePollTimer = setInterval(async function () {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      try {
+        const raw = await runExtendScript(DOC_SIGNATURE_SCRIPT);
+        const sig = raw !== null && raw !== undefined ? String(raw) : 'null';
+        if (sig !== lastDocSignature) {
+          lastDocSignature = sig;
+          let payload = {};
+          try {
+            payload = JSON.parse(sig);
+          } catch (e) {
+            /* keep empty payload */
+          }
+          sendEvent('document_changed', payload);
+          logEntry('info', 'Change event sent (' + sig.slice(0, 60) + ')');
+        }
+      } catch (err) {
+        // Polling must never break the bridge — ignore poll errors silently
+      }
+    }, CHANGE_POLL_MS);
+  }
+
+  function stopChangePolling() {
+    if (changePollTimer) {
+      clearInterval(changePollTimer);
+      changePollTimer = null;
+    }
+    lastDocSignature = null;
+  }
+
   // ── DOM refs (populated after DOM ready) ──
   let indicatorEl = null;
   let statusTextEl = null;
@@ -166,12 +221,14 @@
     ws.onopen = function () {
       setConnected();
       logEntry('success', 'Connected to bridge server');
+      startChangePolling();
     };
 
     ws.onmessage = handleMessage;
 
     ws.onclose = function (event) {
       ws = null;
+      stopChangePolling();
       setDisconnected('Connection closed (code ' + event.code + ')');
 
       if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -198,6 +255,7 @@
       reconnectTimer = null;
     }
     reconnectAttempts = MAX_RECONNECT_ATTEMPTS; // prevent auto-reconnect
+    stopChangePolling();
     if (ws) {
       ws.onclose = null;
       ws.close();
