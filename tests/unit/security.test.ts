@@ -411,3 +411,28 @@ describe('security utilities', () => {
     });
   });
 });
+
+describe('validateFilePath — allowedDirs containment', () => {
+  const tmpBase = '/tmp/idmc-test-allowed';
+
+  it('accepts a path directly inside an allowed directory', () => {
+    const res = validateFilePath('/tmp/idmc-test-allowed/sub/file.txt', [tmpBase]);
+    expect(res.valid).toBe(true);
+  });
+
+  it('rejects a sibling directory whose name merely starts with the allowed name', () => {
+    // /tmp/idmc-test-allowed-evil starts with /tmp/idmc-test-allowed
+    const res = validateFilePath('/tmp/idmc-test-allowed-evil/file.txt', [tmpBase]);
+    expect(res.valid).toBe(false);
+  });
+
+  it('rejects paths outside all allowed directories', () => {
+    const res = validateFilePath('/etc/passwd', [tmpBase]);
+    expect(res.valid).toBe(false);
+  });
+
+  it('still rejects traversal attempts inside an allowed dir', () => {
+    const res = validateFilePath('/tmp/idmc-test-allowed/../../etc/passwd', [tmpBase]);
+    expect(res.valid).toBe(false);
+  });
+});

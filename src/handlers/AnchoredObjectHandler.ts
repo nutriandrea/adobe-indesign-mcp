@@ -25,15 +25,15 @@ export class AnchoredObjectHandler implements IHandler {
   };
 
   private anchorPointMap: Record<string, string> = {
-    topLeft: 'AnchorPoint.TOP_LEFT',
-    topCenter: 'AnchorPoint.TOP_CENTER',
-    topRight: 'AnchorPoint.TOP_RIGHT',
-    leftCenter: 'AnchorPoint.LEFT_CENTER',
-    center: 'AnchorPoint.CENTER',
-    rightCenter: 'AnchorPoint.RIGHT_CENTER',
-    bottomLeft: 'AnchorPoint.BOTTOM_LEFT',
-    bottomCenter: 'AnchorPoint.BOTTOM_CENTER',
-    bottomRight: 'AnchorPoint.BOTTOM_RIGHT',
+    topLeft: "__ANCHOR_POINT('TOP_LEFT')",
+    topCenter: "__ANCHOR_POINT('TOP_CENTER')",
+    topRight: "__ANCHOR_POINT('TOP_RIGHT')",
+    leftCenter: "__ANCHOR_POINT('LEFT_CENTER')",
+    center: "__ANCHOR_POINT('CENTER')",
+    rightCenter: "__ANCHOR_POINT('RIGHT_CENTER')",
+    bottomLeft: "__ANCHOR_POINT('BOTTOM_LEFT')",
+    bottomCenter: "__ANCHOR_POINT('BOTTOM_CENTER')",
+    bottomRight: "__ANCHOR_POINT('BOTTOM_RIGHT')",
   };
 
   public get tools(): ToolDefinition[] {
@@ -129,13 +129,12 @@ export class AnchoredObjectHandler implements IHandler {
       var ip = doc.stories[${params.storyIndex}].insertionPoints[${params.insertionIndex}];
       var newItem;
       if ("${contentType}" === "textFrame") {
-        newItem = doc.textFrames.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
+        newItem = ip.textFrames.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
       } else if ("${contentType}" === "rectangle") {
-        newItem = doc.rectangles.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
+        newItem = ip.rectangles.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
       } else if ("${contentType}" === "oval") {
-        newItem = doc.ovals.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
+        newItem = ip.ovals.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
       }
-      newItem.move(ip);
       var aos = newItem.anchoredObjectSettings;
       aos.anchoredPosition = ${pos};
       aos.anchorPoint = ${pt};

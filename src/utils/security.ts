@@ -5,7 +5,7 @@
  * Protects against path traversal, injection, and abuse via MCP tool calls.
  */
 
-import { normalize, isAbsolute, resolve, sep } from 'path';
+import { normalize, isAbsolute, resolve, relative, sep } from 'path';
 
 /**
  * Sanitizes string input to prevent injection attacks.
@@ -79,7 +79,13 @@ export function validateFilePath(
     if (allowedDirs && allowedDirs.length > 0) {
       const isAllowed = allowedDirs.some((allowedDir) => {
         const normalizedAllowed = normalize(resolve(allowedDir));
-        return normalizedPath.startsWith(normalizedAllowed);
+        // Compare via relative(): startsWith() has prefix-collision bugs
+        // (/allowed vs /allowed-evil) and win32 drive-letter mismatches.
+        const rel = relative(normalizedAllowed, normalizedPath);
+        return (
+          rel === '' ||
+          (rel !== '..' && !rel.startsWith('..' + sep) && !isAbsolute(rel))
+        );
       });
       if (!isAllowed) {
         return { valid: false, error: 'Path not in allowed directories' };
