@@ -333,6 +333,14 @@ npm run lint       # ESLint
 
 ---
 
+## 📚 Deep Dives
+
+- [Origin Story](docs/origin.md) — how this project came to life
+- [Comparison docs](docs/comparison.md) — MCP vs CEP vs ExtendScript in depth
+- [Launch thread](docs/launch-thread.md) — social launch content
+
+---
+
 ## 🤝 Contributing
 
 PRs welcome! The handler pattern is designed to be simple:
