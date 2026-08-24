@@ -261,7 +261,19 @@ node dist/index.js
 
 ---
 
-## 🆕 What's New in v1.1.0
+## 🆕 What's New in v1.3.0
+
+| Change | What it means for you |
+|--------|----------------------|
+| **InDesign 2026 ready** | Color and anchored-object tools work on 2026's renamed enums — no more silent failures after upgrading. |
+| **Real env var config** | Every setting in `.env.example` is now honored: `BRIDGE_PORT`, `HTTP_BRIDGE_ENABLED`, `LOG_LEVEL`, … Invalid values never block startup. |
+| **No more 30s hangs** | If the plugin isn't connected, tool calls fail instantly with "Bridge is not connected" instead of timing out. |
+| **One escaping path** | All handlers share a single battle-tested ExtendScript string escaper. |
+| **Hardened path validation** | File-path checks now use true containment (no prefix-collision escapes). |
+| **Honest status** | `getStatus().connected` reflects actual plugin connectivity, and CI enforces coverage gates. |
+
+<details>
+<summary>What's New in v1.1.0</summary>
 
 | Feature | Tools | What it solves |
 |---------|-------|----------------|
@@ -275,6 +287,24 @@ node dist/index.js
 | **BOM filtering** | Text reads | `\ufeff` and `\u0004` filtered by default. |
 | **Timeout/maxResults** | `text_getStories`, etc. | Custom limits for large documents. |
 | **MCP resources** | `mcp://tools/inventory` | Agent auto-discovers all tools. |
+
+</details>
+
+---
+
+## ⚙️ Configuration
+
+All settings have defaults — zero config required. To customize, copy `.env.example` to `.env` or pass a JSON file; environment variables win over the file:
+
+```bash
+BRIDGE_PORT=8120            # WebSocket port the UXP plugin connects to
+HTTP_BRIDGE_ENABLED=false   # optional REST fallback bridge
+HTTP_BRIDGE_PORT=3000
+SERVER_TRANSPORT=stdio      # stdio | websocket
+LOG_LEVEL=info              # debug | info | warn | error
+```
+
+Precedence: **environment variables > JSON config file > defaults**. Invalid values are ignored, never fatal.
 
 ---
 
