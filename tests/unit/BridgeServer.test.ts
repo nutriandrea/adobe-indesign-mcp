@@ -260,12 +260,14 @@ describe('BridgeServer', () => {
     });
 
     it('should reflect executor queue depth', () => {
+      // Simulate a live plugin so requests stay queued (fast-fail off)
+      (bridgeServer as unknown as { _connected: boolean })._connected = true;
       executor.on('request', () => {});
       executor.execute('some code');
 
       const status = bridgeServer.getStatus();
       expect(status.queueDepth).toBe(1);
-      expect(status.connected).toBe(false);
+      expect(status.connected).toBe(true);
     });
 
     it('should propagate bridge connection state to executor', async () => {
@@ -367,4 +369,39 @@ describe('BridgeServer', () => {
       expect(ws.send).toHaveBeenCalledTimes(1); // only connected message
     });
   });
+
+describe('fast-fail when disconnected', () => {
+  it('should reject requests immediately when no bridge client is connected', async () => {
+    vi.useFakeTimers();
+    await bridgeServer.start();
+
+    // Short timeout so RED fails fast with a clear message mismatch;
+    // GREEN must reject well before any timer fires.
+    const p = executor.execute('app.documents.length;', 100);
+    const expectation = expect(p).rejects.toThrow(/not connected/i);
+
+    await vi.advanceTimersByTimeAsync(200);
+    await expectation;
+  });
+
+  it('should still deliver requests once a client has connected', async () => {
+    vi.useFakeTimers();
+    await bridgeServer.start();
+
+    const ws = createMockWs();
+    const connectionHandler = mockWssOn.mock.calls.find(
+      (c) => c[0] === 'connection',
+    )?.[1] as ((ws: MockWs) => void) | undefined;
+    connectionHandler!(ws);
+
+    const p = executor.execute('1 + 1;');
+    await vi.advanceTimersByTimeAsync(0);
+    // calls[0] is the 'connected' greeting; the routed request follows
+    expect(ws.send).toHaveBeenCalledTimes(2);
+
+    const sent = JSON.parse(ws.send.mock.calls[1][0] as string);
+    executor.handleResponse({ id: sent.id, type: 'result', result: '2' });
+    await expect(p).resolves.toEqual({ id: sent.id, type: 'result', result: '2' });
+  });
+});
 });
