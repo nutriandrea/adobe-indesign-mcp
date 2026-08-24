@@ -23,7 +23,7 @@ describe('PreviewHandler', () => {
   });
 
   it('exposes exactly one document_preview tool', () => {
-    expect(handler.tools.map((t) => t.name)).toEqual(['document_preview']);
+    expect(handler.tools.map((t) => t.name)).toEqual(['preview_document']);
   });
 
   it('sends an export script with page index, PPI and the node-side temp path', async () => {

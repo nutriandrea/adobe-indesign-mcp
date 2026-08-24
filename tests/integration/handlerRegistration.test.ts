@@ -34,6 +34,7 @@ import { TocHandler } from '../../src/handlers/TocHandler.js';
 import { TransformHandler } from '../../src/handlers/TransformHandler.js';
 import { UndoHandler } from '../../src/handlers/UndoHandler.js';
 import { XrefHandler } from '../../src/handlers/XrefHandler.js';
+import { PreviewHandler } from '../../src/handlers/PreviewHandler.js';
 
 interface HandlerPair {
   name: string;
@@ -73,6 +74,7 @@ describe('Handler Registration', () => {
     { name: 'TransformHandler', instance: new TransformHandler(new ScriptExecutor(5000)) },
     { name: 'UndoHandler', instance: new UndoHandler(new ScriptExecutor(5000)) },
     { name: 'XrefHandler', instance: new XrefHandler(new ScriptExecutor(5000)) },
+    { name: 'PreviewHandler', instance: new PreviewHandler(new ScriptExecutor(5000)) },
   ];
 
   for (const { name, instance } of handlerPairs) {
@@ -124,12 +126,12 @@ describe('Handler Registration', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('should produce exactly 191 tools across all 31 handlers', () => {
+  it('should produce exactly 192 tools across all 32 handlers', () => {
     let total = 0;
     for (const { instance } of handlerPairs) {
       total += instance.tools.length;
     }
-    expect(total).toBe(191);
+    expect(total).toBe(192);
   });
 
   it('should have tool names prefixed with handler category', () => {
