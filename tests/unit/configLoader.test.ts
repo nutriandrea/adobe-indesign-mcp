@@ -251,3 +251,35 @@ describe('configLoader — environment variable support', () => {
     expect(config.httpBridge.token).toBe('');
   });
 });
+
+describe('configLoader — comBridge (Windows COM opt-in)', () => {
+  const KEYS = ['COM_BRIDGE_ENABLED', 'COM_BRIDGE_CSCRIPT_PATH', 'COM_BRIDGE_VBS_PATH'] as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  it('defaults to disabled', () => {
+    const config = loadConfig();
+    expect(config.comBridge).toEqual({ enabled: false, cscriptPath: undefined, vbsPath: undefined });
+  });
+
+  it('parses COM_BRIDGE_* env vars', () => {
+    process.env.COM_BRIDGE_ENABLED = 'true';
+    process.env.COM_BRIDGE_CSCRIPT_PATH = 'C:\\Windows\\System32\\cscript.exe';
+    const config = loadConfig();
+    expect(config.comBridge.enabled).toBe(true);
+    expect(config.comBridge.cscriptPath).toBe('C:\\Windows\\System32\\cscript.exe');
+  });
+
+  it('ignores invalid boolean values', () => {
+    process.env.COM_BRIDGE_ENABLED = 'perhaps';
+    expect(loadConfig().comBridge.enabled).toBe(false);
+  });
+});
