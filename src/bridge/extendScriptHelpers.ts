@@ -8,6 +8,28 @@
  * These are injected via ScriptExecutor before every script execution.
  */
 export const EXTENDSCRIPT_HELPERS = `
+// ── InDesign version compatibility (read-only safe) ──
+// InDesign 2026 renames ColorModel.PROCESS_RGB / PROCESS_CMYK to ColorModel.PROCESS.
+// Enum objects are READ-ONLY in 2026, so we never assign to them; we resolve a
+// plain-number constant by READING whichever property exists.
+var __PROCESS_COLOR_MODEL = 1886548851;
+try {
+  if (typeof ColorModel !== 'undefined') {
+    if (ColorModel.PROCESS !== undefined) __PROCESS_COLOR_MODEL = ColorModel.PROCESS;
+    else if (ColorModel.PROCESS_RGB !== undefined) __PROCESS_COLOR_MODEL = ColorModel.PROCESS_RGB;
+  }
+} catch (e) {}
+
+// InDesign 2026 renames AnchorPoint.TOP_LEFT -> AnchorPoint.TOP_LEFT_ANCHOR etc.
+// Resolve by READING the enum; fall back to known numeric values.
+var __ANCHOR_POINT = function (name) {
+  var ap = (typeof AnchorPoint !== 'undefined') ? AnchorPoint : {};
+  if (ap[name + '_ANCHOR'] !== undefined) return ap[name + '_ANCHOR'];
+  if (ap[name] !== undefined) return ap[name];
+  var fallback = { TOP_LEFT: 1095660652, TOP_CENTER: 1095660643, TOP_RIGHT: 1095660658, LEFT_CENTER: 1095658595, CENTER: 1095656308, RIGHT_CENTER: 1095660131, BOTTOM_LEFT: 1095656044, BOTTOM_CENTER: 1095656035, BOTTOM_RIGHT: 1095656050 };
+  return fallback[name] !== undefined ? fallback[name] : 1095660652;
+};
+
 // ── String escaping for safe ExtendScript literal embedding ──
 function __escapeJsx(str) {
   return String(str).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"').replace(/\\n/g, '\\\\n').replace(/\\r/g, '\\\\r').replace(/\\t/g, '\\\\t');

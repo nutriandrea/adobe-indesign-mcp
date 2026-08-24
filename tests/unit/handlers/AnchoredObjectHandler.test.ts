@@ -78,10 +78,10 @@ describe('AnchoredObjectHandler', () => {
       expect(code).toContain('stories[0].insertionPoints[1]');
       expect(code).toContain('rectangles.add');
       expect(code).toContain('geometricBounds: [0, 0, 20, 40]');
-      expect(code).toContain('newItem.move(ip)');
+      expect(code).not.toContain('.move(ip)');
       expect(code).toContain('anchoredObjectSettings');
       expect(code).toContain('AnchorPosition.ANCHORED');
-      expect(code).toContain('AnchorPoint.TOP_LEFT');
+      expect(code).toContain("__ANCHOR_POINT('TOP_LEFT')");
       expect(code).toContain('anchorXoffset = 5');
       expect(code).toContain('anchorYoffset = 10');
       expect(code).toContain('anchorSpaceAbove = 3');
@@ -192,7 +192,7 @@ describe('AnchoredObjectHandler', () => {
       expect(code).toContain('pages[0].allPageItems[1]');
       expect(code).toContain('anchoredObjectSettings');
       expect(code).toContain('AnchorPosition.ABOVE_LINE');
-      expect(code).toContain('AnchorPoint.BOTTOM_RIGHT');
+      expect(code).toContain("__ANCHOR_POINT('BOTTOM_RIGHT')");
       expect(code).toContain('anchorXoffset = 10');
       expect(code).toContain('anchorYoffset = 20');
       expect(code).toContain('anchorSpaceAbove = 5');
