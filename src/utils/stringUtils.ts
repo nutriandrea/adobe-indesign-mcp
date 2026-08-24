@@ -6,15 +6,6 @@ export function escapeExtendScriptString(str: string): string {
     .replace(/\r/g, '\\r');
 }
 
-export function escapeJsxString(str: string): string {
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\${/g, '\\${')
-    .replace(/"/g, '\\"')
-    .replace(/'/g, "\\'");
-}
-
 export function sanitizeCode(code: string): string {
   const dangerous = [
     /require\(['"]fs['"]\)/g,

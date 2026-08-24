@@ -4,6 +4,7 @@ import { formatResponse } from '../utils/errorHandler.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { escapeExtendScriptString } from "../utils/stringUtils.js";
 
 export class ResourcesHandler implements IHandler {
   public readonly name = 'resources';
@@ -67,7 +68,7 @@ export class ResourcesHandler implements IHandler {
   }
 
   private escape(str: string): string {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return escapeExtendScriptString(str);
   }
 
   private async listLinks(_args: unknown, _extra: any): Promise<ToolResult> {

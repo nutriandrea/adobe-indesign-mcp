@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { InDesignError, formatResponse, formatErrorResponse } from '../../src/utils/errorHandler.js';
-import { escapeJsxString, escapeExtendScriptString, sanitizeCode, truncate, toUpperCaseFirst } from '../../src/utils/stringUtils.js';
+import { escapeExtendScriptString, sanitizeCode, truncate, toUpperCaseFirst } from '../../src/utils/stringUtils.js';
 import { createDocumentSchema, pageSchema, openDocumentSchema, addPageSchema, exportDocumentSchema } from '../../src/schemas/index.js';
 import { ExportFormat, Units, PageOrientation, Alignment } from '../../src/types/enums.js';
 
@@ -85,16 +85,6 @@ describe('escapeExtendScriptString', () => {
 
   it('handles lone trailing backslash', () => {
     expect(escapeExtendScriptString('path\\')).toBe('path\\\\');
-  });
-});
-
-describe('escapeJsxString', () => {
-  it('should escape backticks and ${}', () => {
-    expect(escapeJsxString('`hello ${world}`')).toBe('\\`hello \\${world}\\`');
-  });
-
-  it('should escape backslashes and quotes', () => {
-    expect(escapeJsxString('foo\\bar"baz')).toBe('foo\\\\bar\\"baz');
   });
 });
 

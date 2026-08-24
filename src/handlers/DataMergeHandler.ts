@@ -4,6 +4,7 @@ import { formatResponse } from '../utils/errorHandler.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { escapeExtendScriptString } from "../utils/stringUtils.js";
 
 export class DataMergeHandler implements IHandler {
   public readonly name = 'dataMerge';
@@ -65,7 +66,7 @@ export class DataMergeHandler implements IHandler {
   }
 
   private escape(str: string): string {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    return escapeExtendScriptString(str);
   }
 
   private async selectDataSource(args: unknown, _extra: any): Promise<ToolResult> {
