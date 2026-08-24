@@ -38,6 +38,7 @@ import { UndoHandler } from '../handlers/UndoHandler.js';
 import { AnchoredObjectHandler } from '../handlers/AnchoredObjectHandler.js';
 import { ListHandler } from '../handlers/ListHandler.js';
 import { DataMergeHandler } from '../handlers/DataMergeHandler.js';
+import { PreviewHandler } from '../handlers/PreviewHandler.js';
 
 export class IndesignMcpServer {
   private mcpServer: McpServer;
@@ -100,6 +101,7 @@ export class IndesignMcpServer {
       new AnchoredObjectHandler(this.executor),
       new ListHandler(this.executor),
       new DataMergeHandler(this.executor),
+      new PreviewHandler(this.executor),
     ];
 
     for (const handler of handlers) {
