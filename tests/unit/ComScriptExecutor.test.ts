@@ -18,6 +18,7 @@ class FakeChild extends EventEmitter {
   stderr = new EventEmitter();
   kill = vi.fn();
   pid = 4242;
+  exitCode: number | null = null; // null = still running, like real ChildProcess
 }
 
 describe('ComScriptExecutor', () => {
@@ -60,7 +61,7 @@ describe('ComScriptExecutor', () => {
     const p = executor.execute('app.documents.length;');
     const content = lastTempFileContent();
     expect(content).toContain('userInteractionLevel');
-    expect(content).toContain('__inDesignMcpJsonPolyfill');
+    expect(content).toContain('// JSON polyfill for ExtendScript');
     expect(content).toContain('app.documents.length;');
 
     const sentLine = (child.stdin.write.mock.calls[0][0] as string).trim();
