@@ -18,9 +18,9 @@ describe('ExportHandler', () => {
       expect(handler.name).toBe('export');
     });
 
-    it('should expose 9 tools', () => {
+    it('should expose 10 tools', () => {
       const handler = new ExportHandler(createMockExecutor() as any);
-      expect(handler.tools).toHaveLength(9);
+      expect(handler.tools).toHaveLength(10);
     });
 
     it('should export all expected tools', () => {
@@ -242,10 +242,13 @@ describe('export_batchFolder', () => {
   });
 
   it('requires folderPath', async () => {
-    const handler = new ExportHandler(createMockExecutor() as any);
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
     const tool = handler.tools.find((t) => t.name === 'export_batchFolder')!;
-    await expect(tool.handler({})).rejects.toThrow();
-    expect((createMockExecutor().execute as any).mock.calls.length).toBe(0);
+    // withErrorHandling converts validation failures into error results
+    const res = await tool.handler({});
+    expect(res.isError).toBe(true);
+    expect(executor.execute).not.toHaveBeenCalled();
   });
 
   it('sends a loop script over *.indd with invisible open, PDF export and NO_CHANGES close', async () => {

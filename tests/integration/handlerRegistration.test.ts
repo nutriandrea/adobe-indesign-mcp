@@ -126,12 +126,12 @@ describe('Handler Registration', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('should produce exactly 192 tools across all 32 handlers', () => {
+  it('should produce exactly 193 tools across all 32 handlers', () => {
     let total = 0;
     for (const { instance } of handlerPairs) {
       total += instance.tools.length;
     }
-    expect(total).toBe(192);
+    expect(total).toBe(193);
   });
 
   it('should have tool names prefixed with handler category', () => {
