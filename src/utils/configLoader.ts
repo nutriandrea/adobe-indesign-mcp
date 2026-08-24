@@ -31,6 +31,13 @@ const configSchema = z.object({
       level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     })
     .default({}),
+  comBridge: z
+    .object({
+      enabled: z.boolean().default(false),
+      cscriptPath: z.string().optional(),
+      vbsPath: z.string().optional(),
+    })
+    .default({}),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
@@ -55,6 +62,9 @@ const defaultConfig: AppConfig = {
   },
   logging: {
     level: 'info',
+  },
+  comBridge: {
+    enabled: false,
   },
 };
 
@@ -127,6 +137,12 @@ function applyEnvOverrides(base: AppConfig): AppConfig {
         : {}),
       ...(envStr('SERVER_NAME') !== undefined && { name: envStr('SERVER_NAME') }),
       ...(envStr('SERVER_VERSION') !== undefined && { version: envStr('SERVER_VERSION') }),
+    },
+    comBridge: {
+      ...base.comBridge,
+      ...(envBool('COM_BRIDGE_ENABLED') !== undefined && { enabled: envBool('COM_BRIDGE_ENABLED') }),
+      ...(envStr('COM_BRIDGE_CSCRIPT_PATH') !== undefined && { cscriptPath: envStr('COM_BRIDGE_CSCRIPT_PATH') }),
+      ...(envStr('COM_BRIDGE_VBS_PATH') !== undefined && { vbsPath: envStr('COM_BRIDGE_VBS_PATH') }),
     },
     logging: {
       ...base.logging,

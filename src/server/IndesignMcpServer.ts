@@ -4,6 +4,7 @@ import type { AppConfig } from '../utils/configLoader.js';
 import { logger } from '../utils/logger.js';
 import { SessionManager } from '../core/SessionManager.js';
 import { ScriptExecutor } from '../bridge/ScriptExecutor.js';
+import { ComScriptExecutor } from '../bridge/ComScriptExecutor.js';
 import { BridgeServer } from '../bridge/BridgeServer.js';
 import { ExpressBridgeServer } from '../bridge/ExpressBridgeServer.js';
 import { DocumentHandler } from '../handlers/DocumentHandler.js';
@@ -48,7 +49,17 @@ export class IndesignMcpServer {
 
   constructor(config: AppConfig) {
     this.config = config;
-    this.executor = new ScriptExecutor(config.bridge.timeout);
+    if (config.comBridge.enabled) {
+      if (process.platform !== 'win32') {
+        throw new Error(
+          'comBridge.enabled requires Windows — the COM automation backend only exists there. ' +
+            'Set COM_BRIDGE_ENABLED=false to use the default UXP WebSocket bridge.',
+        );
+      }
+      this.executor = new ComScriptExecutor(config.bridge.timeout, config.comBridge);
+    } else {
+      this.executor = new ScriptExecutor(config.bridge.timeout);
+    }
     this.sessionManager = new SessionManager();
 
     this.mcpServer = new McpServer({

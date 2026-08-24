@@ -37,6 +37,7 @@ describe('configLoader', () => {
         httpBridge: { enabled: false, port: 3000, host: '127.0.0.1', token: '' },
         server: { transport: 'stdio', name: 'indesign-nutria-mcp', version: '1.0.0' },
         logging: { level: 'info' },
+        comBridge: { enabled: false },
       });
     });
 
@@ -249,5 +250,37 @@ describe('configLoader — environment variable support', () => {
     const config = loadConfig();
     expect(config.bridge.port).toBe(8120);
     expect(config.httpBridge.token).toBe('');
+  });
+});
+
+describe('configLoader — comBridge (Windows COM opt-in)', () => {
+  const KEYS = ['COM_BRIDGE_ENABLED', 'COM_BRIDGE_CSCRIPT_PATH', 'COM_BRIDGE_VBS_PATH'] as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  it('defaults to disabled', () => {
+    const config = loadConfig();
+    expect(config.comBridge).toEqual({ enabled: false, cscriptPath: undefined, vbsPath: undefined });
+  });
+
+  it('parses COM_BRIDGE_* env vars', () => {
+    process.env.COM_BRIDGE_ENABLED = 'true';
+    process.env.COM_BRIDGE_CSCRIPT_PATH = 'C:\\Windows\\System32\\cscript.exe';
+    const config = loadConfig();
+    expect(config.comBridge.enabled).toBe(true);
+    expect(config.comBridge.cscriptPath).toBe('C:\\Windows\\System32\\cscript.exe');
+  });
+
+  it('ignores invalid boolean values', () => {
+    process.env.COM_BRIDGE_ENABLED = 'perhaps';
+    expect(loadConfig().comBridge.enabled).toBe(false);
   });
 });

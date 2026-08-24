@@ -308,6 +308,12 @@ Precedence: **environment variables > JSON config file > defaults**. Invalid val
 
 ---
 
+## 🪟 Windows
+
+Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or the new opt-in **COM bridge** that needs no plugin at all. See [WINDOWS.md](WINDOWS.md).
+
+---
+
 ## 📦 Project Structure
 
 ```
