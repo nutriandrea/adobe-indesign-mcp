@@ -30,6 +30,18 @@ export class BridgeServer {
     this.executor = executor;
 
     this.executor.on('request', (request) => {
+      // Fast-fail: with no plugin connected, a request could never be answered,
+      // so reject immediately instead of letting it hang until the timeout.
+      if (!this._connected) {
+        this.executor.handleResponse({
+          id: request.id,
+          type: 'error',
+          error:
+            'Bridge is not connected — the InDesign plugin is not reachable. ' +
+            'Open InDesign and make sure the MCP bridge panel is running.',
+        });
+        return;
+      }
       this.broadcast(JSON.stringify(request));
     });
   }

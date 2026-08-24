@@ -260,12 +260,14 @@ describe('BridgeServer', () => {
     });
 
     it('should reflect executor queue depth', () => {
+      // Simulate a live plugin so requests stay queued (fast-fail off)
+      (bridgeServer as unknown as { _connected: boolean })._connected = true;
       executor.on('request', () => {});
       executor.execute('some code');
 
       const status = bridgeServer.getStatus();
       expect(status.queueDepth).toBe(1);
-      expect(status.connected).toBe(false);
+      expect(status.connected).toBe(true);
     });
 
     it('should propagate bridge connection state to executor', async () => {
