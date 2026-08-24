@@ -21,12 +21,14 @@
   let lastDocSignature = null;
   const CHANGE_POLL_MS = 5000;
 
+  // ExtendScript is ES3: no JSON object. Serialize manually.
   const DOC_SIGNATURE_SCRIPT =
-    '(function(){try{var n=app.documents.length;' +
-    'if(!n){return JSON.stringify({docs:0});}' +
+    '(function(){function esc(s){return String(s).replace(/\\\\/g,"\\\\\\\\").replace(/"/g,"\\\\"");}' +
+    'try{var n=app.documents.length;' +
+    'if(!n){return "{\\"docs\\":0}";}' +
     'var d=app.activeDocument;' +
-    'return JSON.stringify({docs:n,name:d.name,modified:d.modified});' +
-    '}catch(e){return JSON.stringify({error:String(e)});}})()';
+    'return "{\\"docs\\":"+n+",\\"name\\":\\""+esc(d.name)+"\\",\\"modified\\":"+(d.modified?"true":"false")+"}";' +
+    '}catch(e){return "{\\"error\\":\\""+esc(String(e))+"\\"}";}})()';
 
   function sendEvent(name, payload) {
     if (ws && ws.readyState === WebSocket.OPEN) {
