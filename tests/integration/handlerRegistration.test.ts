@@ -19,6 +19,21 @@ import { AnchoredObjectHandler } from '../../src/handlers/AnchoredObjectHandler.
 import { ListHandler } from '../../src/handlers/ListHandler.js';
 import { DataMergeHandler } from '../../src/handlers/DataMergeHandler.js';
 import { TextAdvancedHandler } from '../../src/handlers/TextAdvancedHandler.js';
+import { ColorHandler } from '../../src/handlers/ColorHandler.js';
+import { EffectHandler } from '../../src/handlers/EffectHandler.js';
+import { FontHandler } from '../../src/handlers/FontHandler.js';
+import { GrepHandler } from '../../src/handlers/GrepHandler.js';
+import { ImageHandler } from '../../src/handlers/ImageHandler.js';
+import { IndexHandler } from '../../src/handlers/IndexHandler.js';
+import { LayerHandler } from '../../src/handlers/LayerHandler.js';
+import { NoteHandler } from '../../src/handlers/NoteHandler.js';
+import { SectionHandler } from '../../src/handlers/SectionHandler.js';
+import { ShapeHandler } from '../../src/handlers/ShapeHandler.js';
+import { TableStyleHandler } from '../../src/handlers/TableStyleHandler.js';
+import { TocHandler } from '../../src/handlers/TocHandler.js';
+import { TransformHandler } from '../../src/handlers/TransformHandler.js';
+import { UndoHandler } from '../../src/handlers/UndoHandler.js';
+import { XrefHandler } from '../../src/handlers/XrefHandler.js';
 
 interface HandlerPair {
   name: string;
@@ -43,6 +58,21 @@ describe('Handler Registration', () => {
     { name: 'ListHandler', instance: new ListHandler(new ScriptExecutor(5000)) },
     { name: 'DataMergeHandler', instance: new DataMergeHandler(new ScriptExecutor(5000)) },
     { name: 'TextAdvancedHandler', instance: new TextAdvancedHandler(new ScriptExecutor(5000)) },
+    { name: 'ColorHandler', instance: new ColorHandler(new ScriptExecutor(5000)) },
+    { name: 'EffectHandler', instance: new EffectHandler(new ScriptExecutor(5000)) },
+    { name: 'FontHandler', instance: new FontHandler(new ScriptExecutor(5000)) },
+    { name: 'GrepHandler', instance: new GrepHandler(new ScriptExecutor(5000)) },
+    { name: 'ImageHandler', instance: new ImageHandler(new ScriptExecutor(5000)) },
+    { name: 'IndexHandler', instance: new IndexHandler(new ScriptExecutor(5000)) },
+    { name: 'LayerHandler', instance: new LayerHandler(new ScriptExecutor(5000)) },
+    { name: 'NoteHandler', instance: new NoteHandler(new ScriptExecutor(5000)) },
+    { name: 'SectionHandler', instance: new SectionHandler(new ScriptExecutor(5000)) },
+    { name: 'ShapeHandler', instance: new ShapeHandler(new ScriptExecutor(5000)) },
+    { name: 'TableStyleHandler', instance: new TableStyleHandler(new ScriptExecutor(5000)) },
+    { name: 'TocHandler', instance: new TocHandler(new ScriptExecutor(5000)) },
+    { name: 'TransformHandler', instance: new TransformHandler(new ScriptExecutor(5000)) },
+    { name: 'UndoHandler', instance: new UndoHandler(new ScriptExecutor(5000)) },
+    { name: 'XrefHandler', instance: new XrefHandler(new ScriptExecutor(5000)) },
   ];
 
   for (const { name, instance } of handlerPairs) {
@@ -94,12 +124,12 @@ describe('Handler Registration', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('should produce exactly 123 tools across all 16 handlers', () => {
+  it('should produce exactly 191 tools across all 31 handlers', () => {
     let total = 0;
     for (const { instance } of handlerPairs) {
       total += instance.tools.length;
     }
-    expect(total).toBe(123);
+    expect(total).toBe(191);
   });
 
   it('should have tool names prefixed with handler category', () => {
@@ -116,6 +146,14 @@ describe('Handler Registration', () => {
         } else if (name === 'ExportHandler' && tool.name === 'script_run') {
           // script_run is a general-purpose debug tool, not scoped to export_
           expect(tool.name).toBe('script_run');
+        } else if (name === 'TableStyleHandler') {
+          // Table/cell styles share one handler with two namespaces
+          const validPrefixes = ['tableStyle_', 'cellStyle_'];
+          expect(validPrefixes.some(p => tool.name.startsWith(p))).toBe(true);
+        } else if (name === 'UndoHandler') {
+          // Bare undo/redo commands plus namespaced group/history tools
+          const bareNames = ['undo', 'redo'];
+          expect(bareNames.includes(tool.name) || tool.name.startsWith('undo_')).toBe(true);
         } else {
           expect(tool.name.startsWith(category + '_')).toBe(true);
         }
