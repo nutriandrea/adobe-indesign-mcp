@@ -259,6 +259,17 @@ node dist/index.js
 🤖 "Export page 1 as JPG."
 ```
 
+### 📝 Notes for MCP client developers
+
+Building a custom client (script, harness, test runner) against this server? Two lessons from real-world integration:
+
+| Pitfall | Fix |
+|---------|-----|
+| **Large responses arrive split across stdout chunks.** `preview_document` at 150ppi returns ~100+ KB of base64 — more than one pipe chunk. Parsing each `data` event with `JSON.parse(chunk)` silently drops the pieces and the call appears to hang forever. | Accumulate stdin into a buffer and only `JSON.parse` complete newline-delimited lines: `buf += chunk; while ((i = buf.indexOf('\n')) >= 0) { parse(buf.slice(0, i)); buf = buf.slice(i + 1); }` |
+| **Image tools return `image` content, not `text`.** `preview_document` responds with `{ type: 'image', mimeType: 'image/png', data: '<base64>' }` — reading `.text` yields `undefined`. | Read the base64 payload from `content[0].data` (check `content[0].type`). |
+
+Every message is a single-line JSON-RPC object terminated by `\n`; there is no framing beyond the newline.
+
 ---
 
 ## 🆕 What's New in v1.4.0
