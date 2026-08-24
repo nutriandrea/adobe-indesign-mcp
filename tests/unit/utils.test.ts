@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { InDesignError, formatResponse, formatErrorResponse } from '../../src/utils/errorHandler.js';
-import { escapeJsxString, sanitizeCode, truncate, toUpperCaseFirst } from '../../src/utils/stringUtils.js';
+import { escapeJsxString, escapeExtendScriptString, sanitizeCode, truncate, toUpperCaseFirst } from '../../src/utils/stringUtils.js';
 import { createDocumentSchema, pageSchema, openDocumentSchema, addPageSchema, exportDocumentSchema } from '../../src/schemas/index.js';
 import { ExportFormat, Units, PageOrientation, Alignment } from '../../src/types/enums.js';
 
@@ -56,6 +56,38 @@ describe('formatErrorResponse', () => {
 });
 
 // ── String util tests ──
+describe('escapeExtendScriptString', () => {
+  it('escapes backslashes first', () => {
+    expect(escapeExtendScriptString('a\\b')).toBe('a\\\\b');
+  });
+
+  it('escapes double quotes for double-quoted literals', () => {
+    expect(escapeExtendScriptString('say "hi"')).toBe('say \\"hi\\"');
+  });
+
+  it('escapes newlines and carriage returns', () => {
+    expect(escapeExtendScriptString('line1\nline2\rline3')).toBe('line1\\nline2\\rline3');
+  });
+
+  it('handles CRLF sequences', () => {
+    expect(escapeExtendScriptString('a\r\nb')).toBe('a\\r\\nb');
+  });
+
+  it('leaves safe text untouched', () => {
+    expect(escapeExtendScriptString('Ciao mondo 123!')).toBe('Ciao mondo 123!');
+  });
+
+  it('never produces an early string terminator (injection-style input)', () => {
+    const evil = 'x"; app.quit(); "';
+    const out = escapeExtendScriptString(evil);
+    expect(out).not.toMatch(/(^|[^\\])"/);
+  });
+
+  it('handles lone trailing backslash', () => {
+    expect(escapeExtendScriptString('path\\')).toBe('path\\\\');
+  });
+});
+
 describe('escapeJsxString', () => {
   it('should escape backticks and ${}', () => {
     expect(escapeJsxString('`hello ${world}`')).toBe('\\`hello \\${world}\\`');
