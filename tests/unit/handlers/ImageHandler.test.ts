@@ -217,4 +217,18 @@ describe('ImageHandler', () => {
       expect(parsed.linkStatus).toBe('normal');
     });
   });
+
+
+describe('path hardening', () => {
+  it('rejects traversal and system paths before touching the executor', async () => {
+    const executor = createMockExecutor();
+    const handler = new ImageHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'image_place')!;
+    for (const bad of ['../../etc/passwd', '/etc/hosts', 'C:\\Windows\\System32\\x.png']) {
+      const res = await tool.handler({ filePath: bad, ...{"pageIndex": 0} });
+      expect(res.isError, `expected isError for ${bad}`).toBe(true);
+      expect(executor.execute, `executor must not run for ${bad}`).not.toHaveBeenCalled();
+    }
+  });
+});
 });
