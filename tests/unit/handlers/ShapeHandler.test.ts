@@ -119,9 +119,9 @@ describe('ShapeHandler', () => {
   });
 
   describe('shape_polygon_create', () => {
-    it('should call executor with polygons.add() and numberOfSides', async () => {
+    it('should set app.polygonPreferences BEFORE polygons.add() (2026 DOM: instances have no numberOfSides)', async () => {
       const mock = createMockExecutor();
-      mock.execute.mockResolvedValue({ result: { index: 0, type: 'polygon', sides: 6, bounds: [0, 0, 50, 50] } });
+      mock.execute.mockResolvedValue({ result: { index: 0, type: 'polygon', sides: 8, bounds: [0, 0, 50, 50] } });
       const handler = new ShapeHandler(mock as any);
 
       const tool = handler.tools.find((t) => t.name === 'shape_polygon_create')!;
@@ -129,8 +129,12 @@ describe('ShapeHandler', () => {
 
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
+      // InDesign 2026 moved side count to application-level preferences;
+      // setting it on the polygon instance throws "not a function"
+      expect(code).toContain('app.polygonPreferences.numberOfSides = 8;');
       expect(code).toContain('polygons.add()');
-      expect(code).toContain('numberOfSides = 8');
+      expect(code.indexOf('app.polygonPreferences.numberOfSides')).toBeLessThan(code.indexOf('polygons.add()'));
+      expect(code).not.toContain('shape.numberOfSides');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
 
@@ -143,7 +147,7 @@ describe('ShapeHandler', () => {
       await tool.handler({ pageIndex: 0, x: 0, y: 0, width: 50, height: 50 }, {});
 
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('numberOfSides = 6');
+      expect(code).toContain('app.polygonPreferences.numberOfSides = 6;');
     });
   });
 

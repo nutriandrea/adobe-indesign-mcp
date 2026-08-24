@@ -189,11 +189,14 @@ export class ShapeHandler implements IHandler {
     const fillStr = params.fillColor ? `shape.fillColor = app.activeDocument.colors.item("${this.escape(params.fillColor)}");` : '';
     const strokeStr = params.strokeColor ? `shape.strokeColor = app.activeDocument.colors.item("${this.escape(params.strokeColor)}");` : '';
 
+    // InDesign 2026 DOM: polygon side count lives on application-level
+    // preferences and must be set BEFORE add() — the instance property
+    // `shape.numberOfSides` no longer exists and throws at runtime.
     const code = `
+      app.polygonPreferences.numberOfSides = ${params.numberOfSides};
       var shape = app.activeDocument.pages[${params.pageIndex}].polygons.add();
       shape.geometricBounds = [${params.y}, ${params.x}, ${params.y + params.height}, ${params.x + params.width}];
       shape.strokeWeight = ${params.strokeWeight};
-      shape.numberOfSides = ${params.numberOfSides};
       ${fillStr}
       ${strokeStr}
       JSON.stringify({ index: shape.index, type: 'polygon', sides: ${params.numberOfSides}, bounds: shape.geometricBounds });
