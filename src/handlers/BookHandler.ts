@@ -5,6 +5,7 @@ import { withLogging, withErrorHandling, compose } from '../utils/middleware.js'
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { escapeExtendScriptString } from "../utils/stringUtils.js";
+import { filePathError } from '../utils/security.js';
 
 export class BookHandler implements IHandler {
   public readonly name = 'book';
@@ -69,6 +70,14 @@ export class BookHandler implements IHandler {
 
   private async open(args: unknown, _extra: any): Promise<ToolResult> {
     const params = z.object({ filePath: z.string() }).parse(args as Record<string, unknown>);
+    const __pathError = filePathError(params.filePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const escPath = this.escape(params.filePath);
     const code = `
       var book = app.open(File("${escPath}"));

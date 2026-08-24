@@ -6,6 +6,8 @@ import { withLogging, withErrorHandling, compose } from '../utils/middleware.js'
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SessionManager } from '../core/SessionManager.js';
+import { filePathError } from '../utils/security.js';
+import { escapeExtendScriptString } from '../utils/stringUtils.js';
 
 export class DocumentHandler implements IHandler {
   public readonly name = 'document';
@@ -129,8 +131,16 @@ export class DocumentHandler implements IHandler {
 
   private async open(args: unknown, _extra: any): Promise<ToolResult> {
     const params = openDocumentSchema.parse(args);
+    const __pathError = filePathError(params.filePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const code = `
-      var doc = app.open(File("${params.filePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"), ${params.showWindow});
+      var doc = app.open(File("${escapeExtendScriptString(params.filePath)}"), ${params.showWindow});
       JSON.stringify({
         name: doc.name,
         pages: doc.pages.length,
@@ -145,9 +155,17 @@ export class DocumentHandler implements IHandler {
 
   private async save(args: unknown, _extra: any): Promise<ToolResult> {
     const params = saveDocumentSchema.parse(args);
+    const __pathError = params.filePath ? filePathError(params.filePath) : null;
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const saveOpt = params.saveOptions === 'yes' ? 'SaveOptions.yes' : params.saveOptions === 'no' ? 'SaveOptions.no' : 'SaveOptions.ask';
     const code = params.filePath
-      ? `app.activeDocument.save(File("${params.filePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")); "saved"`
+      ? `app.activeDocument.save(File("${escapeExtendScriptString(params.filePath!)}")); "saved"`
       : `app.activeDocument.${saveOpt === 'SaveOptions.yes' ? 'save()' : 'close(' + saveOpt + ')'}; "saved"`;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);

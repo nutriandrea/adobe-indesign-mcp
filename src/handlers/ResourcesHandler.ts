@@ -5,6 +5,7 @@ import { withLogging, withErrorHandling, compose } from '../utils/middleware.js'
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { escapeExtendScriptString } from "../utils/stringUtils.js";
+import { filePathError } from '../utils/security.js';
 
 export class ResourcesHandler implements IHandler {
   public readonly name = 'resources';
@@ -93,6 +94,14 @@ export class ResourcesHandler implements IHandler {
 
   private async updateLink(args: unknown, _extra: any): Promise<ToolResult> {
     const params = z.object({ linkIndex: z.number().int().min(0), newFilePath: z.string() }).parse(args as Record<string, unknown>);
+    const __pathError = filePathError(params.newFilePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const escPath = this.escape(params.newFilePath);
     const code = `
       var link = app.activeDocument.links[${params.linkIndex}];
@@ -127,6 +136,14 @@ export class ResourcesHandler implements IHandler {
 
   private async unembedLink(args: unknown, _extra: any): Promise<ToolResult> {
     const params = z.object({ linkIndex: z.number().int().min(0), filePath: z.string() }).parse(args as Record<string, unknown>);
+    const __pathError = filePathError(params.filePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const escPath = this.escape(params.filePath);
     const code = `
       var link = app.activeDocument.links[${params.linkIndex}];
