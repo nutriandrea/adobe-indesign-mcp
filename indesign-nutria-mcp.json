@@ -12,11 +12,14 @@
     "token": ""
   },
   "server": {
-    "transport": "websocket",
+    "transport": "stdio",
     "name": "indesign-nutria-mcp",
     "version": "1.0.0"
   },
   "logging": {
     "level": "info"
+  },
+  "comBridge": {
+    "enabled": true
   }
 }
