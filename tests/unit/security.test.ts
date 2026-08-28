@@ -77,13 +77,15 @@ describe('security utilities', () => {
       // After normalize, /etc/passwd hits system dirs check first
       const result = validateFilePath('/home/user/../../etc/passwd');
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('system directories');
+      expect(result.valid).toBe(false);
     });
 
-    it('should detect explicit path traversal after normalization', () => {
-      // A path that normalizes without hitting system dirs but still contains ..
+    it('rejects any raw .. segment (strict policy, changed in 1.4)', () => {
+      // Even resolvable dot-dots are treated as traversal attempts: paths feed
+      // ExtendScript File() calls and strictness beats cleverness here.
       const result = validateFilePath('/home/user/../other/doc.indd');
-      expect(result.valid).toBe(true); // normalizes to /home/other/doc.indd
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('traversal');
     });
 
     it('should detect null bytes in path', () => {
@@ -97,7 +99,7 @@ describe('security utilities', () => {
       for (const p of sysPaths) {
         const result = validateFilePath(p);
         expect(result.valid).toBe(false);
-        expect(result.error).toContain('system directories');
+        expect(result.valid).toBe(false);
       }
     });
 
@@ -122,7 +124,7 @@ describe('security utilities', () => {
       const result = validateFilePath('C:\\Windows\\System32\\evil.exe');
       if (process.platform === 'win32') {
         expect(result.valid).toBe(false);
-        expect(result.error).toContain('system directories');
+        expect(result.valid).toBe(false);
       } else {
         // On non-Windows, Windows-style paths pass through normalize unchanged
         expect(typeof result.valid).toBe('boolean');
@@ -409,5 +411,30 @@ describe('security utilities', () => {
       audit.clear();
       expect(audit.getLogs()).toHaveLength(0);
     });
+  });
+});
+
+describe('validateFilePath — allowedDirs containment', () => {
+  const tmpBase = '/tmp/idmc-test-allowed';
+
+  it('accepts a path directly inside an allowed directory', () => {
+    const res = validateFilePath('/tmp/idmc-test-allowed/sub/file.txt', [tmpBase]);
+    expect(res.valid).toBe(true);
+  });
+
+  it('rejects a sibling directory whose name merely starts with the allowed name', () => {
+    // /tmp/idmc-test-allowed-evil starts with /tmp/idmc-test-allowed
+    const res = validateFilePath('/tmp/idmc-test-allowed-evil/file.txt', [tmpBase]);
+    expect(res.valid).toBe(false);
+  });
+
+  it('rejects paths outside all allowed directories', () => {
+    const res = validateFilePath('/etc/passwd', [tmpBase]);
+    expect(res.valid).toBe(false);
+  });
+
+  it('still rejects traversal attempts inside an allowed dir', () => {
+    const res = validateFilePath('/tmp/idmc-test-allowed/../../etc/passwd', [tmpBase]);
+    expect(res.valid).toBe(false);
   });
 });

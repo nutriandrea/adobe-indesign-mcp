@@ -52,6 +52,22 @@ export function validateFilePath(
       return { valid: false, error: 'Path must be a non-empty string' };
     }
 
+    // Reject traversal attempts on the RAW input before any resolution:
+    // resolve()/normalize() collapse '..' segments, silently turning
+    // '../../etc/passwd' into a plausible-looking absolute path.
+    if (filePath.split(/[\\/]+/).includes('..')) {
+      return { valid: false, error: 'Path traversal detected' };
+    }
+
+    // Cross-platform forbidden-dir check on the RAW string: on macOS a
+    // Windows-style path would never match after POSIX normalization.
+    const loweredRaw = filePath.toLowerCase();
+    for (const forbidden of FORBIDDEN_SYSTEM_DIRS) {
+      if (loweredRaw.startsWith(forbidden.toLowerCase())) {
+        return { valid: false, error: 'Access to system directories is forbidden' };
+      }
+    }
+
     // Convert to absolute path
     const absolutePath = isAbsolute(filePath) ? filePath : resolve(filePath);
 
@@ -79,9 +95,8 @@ export function validateFilePath(
     if (allowedDirs && allowedDirs.length > 0) {
       const isAllowed = allowedDirs.some((allowedDir) => {
         const normalizedAllowed = normalize(resolve(allowedDir));
-        // Compare via relative(): on win32 a drive-less path (e.g. \home\docs)
-        // resolves onto the allowed dir's drive, so a `..`-free relative result
-        // proves containment without drive-letter mismatch (C:\... vs \...).
+        // Compare via relative(): startsWith() has prefix-collision bugs
+        // (/allowed vs /allowed-evil) and win32 drive-letter mismatches.
         const rel = relative(normalizedAllowed, normalizedPath);
         return (
           rel === '' ||
@@ -286,4 +301,13 @@ export class AuditLogger {
   clear(): void {
     this.logs = [];
   }
+}
+
+/**
+ * Convenience wrapper: returns an error message when the path is unsafe,
+ * or null when it passes validation.
+ */
+export function filePathError(filePath: string): string | null {
+  const result = validateFilePath(filePath);
+  return result.valid ? null : (result.error ?? 'Invalid path');
 }

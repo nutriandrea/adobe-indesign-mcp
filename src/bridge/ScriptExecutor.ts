@@ -2,18 +2,25 @@ import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
 import type { BridgeRequest, BridgeResponse, BridgeStatus } from '../types/index.js';
 import { InDesignError } from '../utils/errorHandler.js';
-import { sanitizeCode } from '../utils/stringUtils.js';
-import { JSON_POLYFILL } from './jsonPolyfill.js';
-import { getExtendScriptHelpers } from './extendScriptHelpers.js';
+import { wrapExtendScript } from './wrapExtendScript.js';
 
 export class ScriptExecutor extends EventEmitter {
   private pending: Map<string, { resolve: (res: BridgeResponse) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }> = new Map();
   private defaultTimeout: number;
   private _undoGroupActive: boolean = false;
+  private _connected: boolean = false;
 
   constructor(defaultTimeout: number = 30000) {
     super();
     this.defaultTimeout = defaultTimeout;
+  }
+
+  /**
+   * Called by the BridgeServer when a plugin client connects or disconnects.
+   * Connection state is independent from the pending request queue.
+   */
+  setConnected(connected: boolean): void {
+    this._connected = connected;
   }
 
   get undoGroupActive(): boolean {
@@ -33,33 +40,14 @@ export class ScriptExecutor extends EventEmitter {
     timeout?: number,
     debug?: boolean,
   ): Promise<BridgeResponse> {
-    const helpers = getExtendScriptHelpers();
-    const polyfilled = JSON_POLYFILL + '\n' + helpers;
-
-    let wrapped = code;
-
-    if (debug) {
-      wrapped = `
-try {
-  ${code}
-} catch(e) {
-  JSON.stringify({ __extendscript_error: true, message: e.message, line: e.line, fileName: e.fileName, stack: e.stack });
-}`;
-    }
-
-    if (this._undoGroupActive) {
-      wrapped = `
-app.scriptPreferences.undoMode = UndoModes.ENTIRE_SCRIPT;
-${wrapped}
-app.scriptPreferences.undoMode = UndoModes.FAST_ENTIRE_SCRIPT;`;
-    }
-
-    const fullCode = polyfilled + '\n' + wrapped;
-    const sanitized = sanitizeCode(fullCode);
+    const fullCode = wrapExtendScript(code, {
+      debug,
+      undoGroupActive: this._undoGroupActive,
+    });
     const id = uuidv4();
     const request: BridgeRequest = {
       id,
-      code: sanitized,
+      code: fullCode,
       timeout: timeout ?? this.defaultTimeout,
     };
 
@@ -92,7 +80,7 @@ app.scriptPreferences.undoMode = UndoModes.FAST_ENTIRE_SCRIPT;`;
 
   getStatus(): BridgeStatus {
     return {
-      connected: this.pending.size > 0,
+      connected: this._connected,
       queueDepth: this.pending.size,
     };
   }

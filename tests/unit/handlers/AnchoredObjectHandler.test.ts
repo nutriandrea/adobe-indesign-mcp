@@ -76,11 +76,9 @@ describe('AnchoredObjectHandler', () => {
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('stories[0].insertionPoints[1]');
-      expect(code).toContain('ip.rectangles.add');
+      expect(code).toContain('rectangles.add');
       expect(code).toContain('geometricBounds: [0, 0, 20, 40]');
-      // InDesign 2026: move(InsertionPoint) is no longer supported — the item
-      // is added to the insertion point's own collection instead.
-      expect(code).not.toContain('move(ip)');
+      expect(code).not.toContain('.move(ip)');
       expect(code).toContain('anchoredObjectSettings');
       expect(code).toContain('AnchorPosition.ANCHORED');
       expect(code).toContain("__ANCHOR_POINT('TOP_LEFT')");

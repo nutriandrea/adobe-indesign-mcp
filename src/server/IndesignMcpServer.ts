@@ -3,7 +3,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { AppConfig } from '../utils/configLoader.js';
 import { logger } from '../utils/logger.js';
 import { SessionManager } from '../core/SessionManager.js';
+import { ChangeTracker } from '../core/ChangeTracker.js';
 import { ScriptExecutor } from '../bridge/ScriptExecutor.js';
+import { ComScriptExecutor } from '../bridge/ComScriptExecutor.js';
 import { BridgeServer } from '../bridge/BridgeServer.js';
 import { ExpressBridgeServer } from '../bridge/ExpressBridgeServer.js';
 import { DocumentHandler } from '../handlers/DocumentHandler.js';
@@ -37,19 +39,33 @@ import { UndoHandler } from '../handlers/UndoHandler.js';
 import { AnchoredObjectHandler } from '../handlers/AnchoredObjectHandler.js';
 import { ListHandler } from '../handlers/ListHandler.js';
 import { DataMergeHandler } from '../handlers/DataMergeHandler.js';
+import { PreviewHandler } from '../handlers/PreviewHandler.js';
+import { ChangesHandler } from '../handlers/ChangesHandler.js';
 
 export class IndesignMcpServer {
   private mcpServer: McpServer;
   private executor: ScriptExecutor;
   private sessionManager: SessionManager;
+  private changeTracker: ChangeTracker;
   private bridgeServer: BridgeServer | null = null;
   private expressBridgeServer: ExpressBridgeServer | null = null;
   private config: AppConfig;
 
   constructor(config: AppConfig) {
     this.config = config;
-    this.executor = new ScriptExecutor(config.bridge.timeout);
+    if (config.comBridge.enabled) {
+      if (process.platform !== 'win32') {
+        throw new Error(
+          'comBridge.enabled requires Windows — the COM automation backend only exists there. ' +
+            'Set COM_BRIDGE_ENABLED=false to use the default UXP WebSocket bridge.',
+        );
+      }
+      this.executor = new ComScriptExecutor(config.bridge.timeout, config.comBridge);
+    } else {
+      this.executor = new ScriptExecutor(config.bridge.timeout);
+    }
     this.sessionManager = new SessionManager();
+    this.changeTracker = new ChangeTracker();
 
     this.mcpServer = new McpServer({
       name: config.server.name,
@@ -89,6 +105,8 @@ export class IndesignMcpServer {
       new AnchoredObjectHandler(this.executor),
       new ListHandler(this.executor),
       new DataMergeHandler(this.executor),
+      new PreviewHandler(this.executor),
+      new ChangesHandler(this.changeTracker),
     ];
 
     for (const handler of handlers) {
@@ -167,12 +185,18 @@ export class IndesignMcpServer {
     if (this.config.server.transport === 'websocket') {
       this.bridgeServer = new BridgeServer(this.config.bridge, this.executor);
       await this.bridgeServer.start();
+
+      // Feed plugin-pushed change events into the tracker for changes_getStatus
+      this.bridgeServer.events.on('document_changed', (payload: unknown) => {
+        this.changeTracker.record('document_changed', payload);
+        logger.debug('Document change event received', { payload });
+      });
     }
 
     if (this.config.httpBridge.enabled) {
-      const token = this.config.httpBridge.token || process.env.BRIDGE_TOKEN || '';
+      // Token resolution (env included) is handled by loadConfig
       this.expressBridgeServer = new ExpressBridgeServer(
-        { ...this.config.httpBridge, token },
+        this.config.httpBridge,
         this.executor,
       );
       await this.expressBridgeServer.start();

@@ -4,6 +4,8 @@ import { formatResponse } from '../utils/errorHandler.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { escapeExtendScriptString } from "../utils/stringUtils.js";
+import { filePathError } from '../utils/security.js';
 
 export class ImageHandler implements IHandler {
   public readonly name = 'image';
@@ -78,7 +80,7 @@ export class ImageHandler implements IHandler {
   }
 
   private escape(str: string): string {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return escapeExtendScriptString(str);
   }
 
   private async placeImage(args: unknown, _extra: any): Promise<ToolResult> {
@@ -92,6 +94,14 @@ export class ImageHandler implements IHandler {
     }).parse(args as Record<string, unknown>);
 
     const escPath = this.escape(params.filePath);
+    const __pathError = filePathError(params.filePath);
+    if (__pathError) {
+      return {
+        content: [{ type: 'text', text: `Invalid file path: ${__pathError}` }],
+        isError: true,
+      };
+    }
+
     const scaleCode = params.width && params.height
       ? `img.geometricBounds = [${params.y}, ${params.x}, ${params.y + params.height}, ${params.x + params.width}];`
       : '';

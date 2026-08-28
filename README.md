@@ -7,7 +7,7 @@
 
 <p align="center">
   <b>Say "Create an A4 document with 5 pages, add a red circle on page 3" — and it happens.</b><br>
-  <i>The most comprehensive MCP server for Adobe InDesign. 183 tools. 31 handlers. Full DOM coverage.</i>
+  <i>The most comprehensive MCP server for Adobe InDesign. 194 tools. 33 handlers. Full DOM coverage.</i>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat&logo=npm&label=version&color=7c3aed" alt="npm version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tools-183-7c3aed?style=flat" alt="tools"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tools-194-7c3aed?style=flat" alt="tools"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-747-22c55e?style=flat" alt="tests"></a>
   <a href="#"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
@@ -42,14 +42,14 @@ This MCP server fixes that. One `npm install` and your AI agent controls InDesig
 |---|---|---|---|---|---|
 | **Learn in** | 30 seconds | 3 weeks | 2 months | 1 month | 0 (slow) |
 | **AI-native** | ✅ Any MCP agent | ❌ | ❌ | ❌ | ❌ |
-| **Tool count** | **183** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
+| **Tool count** | **194** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
 | **Error messages** | Human-readable | Opaque crashes | Varies | Better | N/A |
 | **Setup time** | 5 minutes | 10 minutes | 2 hours | 30 minutes | Instant |
 | **Undo support** | ✅ Built-in | ❌ | Varies | ❌ | ✅ |
 | **Search text** | `text_search("pattern")` | Write 50 lines | Maybe | Maybe | Ctrl+F |
 | **Debug mode** | ✅ Stack traces | ❌ | Varies | Limited | N/A |
 | **Remote control** | ✅ Anywhere STDIO works | ❌ InDesign-only | ❌ | ❌ | N/A |
-| **Maintenance** | Zero (we handle 183 tools) | You write+test everything | Fragile | Fragile | N/A |
+| **Maintenance** | Zero (we handle 194 tools) | You write+test everything | Fragile | Fragile | N/A |
 
 ---
 
@@ -131,7 +131,7 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 │  Any AI Agent       │ ◄────────────────► │  indesign-nutria-mcp │ ◄───────────────► │  Adobe InDesign   │
 │  (Claude, OpenCode, │                    │  (Node.js MCP Server) │     port 8120     │  + UXP Plugin     │
 │   Cursor, etc.)     │                    │  31 handlers         │                    │  + ExtendScript    │
-└─────────────────────┘                    │  183 tools           │                    └──────────────────┘
+└─────────────────────┘                    │  194 tools           │                    └──────────────────┘
                                            │  10 AI skills        │
                                            └──────────────────────┘
 ```
@@ -237,7 +237,7 @@ The server exposes **190 typed `mcp_indesign_*` tools** that wrap ExtendScript i
 |---|---|
 | `mcp://session/status` | Active document session state |
 | `mcp://bridge/status` | WebSocket bridge health + queue depth |
-| `mcp://tools/inventory` | Full 183-tool catalog for agent self-discovery |
+| `mcp://tools/inventory` | Full 194-tool catalog for agent self-discovery |
 | `mcp://document/active` | Currently active document info |
 
 ---
@@ -320,9 +320,42 @@ node dist/index.js
 🤖 "Export page 1 as JPG."
 ```
 
+### 📝 Notes for MCP client developers
+
+Building a custom client (script, harness, test runner) against this server? Two lessons from real-world integration:
+
+| Pitfall | Fix |
+|---------|-----|
+| **Large responses arrive split across stdout chunks.** `preview_document` at 150ppi returns ~100+ KB of base64 — more than one pipe chunk. Parsing each `data` event with `JSON.parse(chunk)` silently drops the pieces and the call appears to hang forever. | Accumulate stdin into a buffer and only `JSON.parse` complete newline-delimited lines: `buf += chunk; while ((i = buf.indexOf('\n')) >= 0) { parse(buf.slice(0, i)); buf = buf.slice(i + 1); }` |
+| **Image tools return `image` content, not `text`.** `preview_document` responds with `{ type: 'image', mimeType: 'image/png', data: '<base64>' }` — reading `.text` yields `undefined`. | Read the base64 payload from `content[0].data` (check `content[0].type`). |
+
+Every message is a single-line JSON-RPC object terminated by `\n`; there is no framing beyond the newline.
+
 ---
 
-## 🆕 What's New in v1.1.0
+## 🆕 What's New in v1.4.0
+
+| Change | What it means for you |
+|--------|----------------------|
+| **Agent vision: `preview_document`** | Render any page as an image the agent can actually see — layout mistakes get caught in the loop, not after export. |
+| **Batch PDF: `export_batchFolder`** | Export every `.indd` in a folder to PDF in one call, with per-file results. |
+| **Windows COM bridge** | Run with zero plugins via `COM_BRIDGE_ENABLED=true`. See [WINDOWS.md](WINDOWS.md). |
+| **Hardened file paths** | Every file-touching tool validates paths up front — traversal attempts (`..`) and system directories are rejected before InDesign ever sees them (now 11 guarded call sites). |
+
+<details>
+<summary>v1.3.0</summary>
+
+| Change | What it means for you |
+|--------|----------------------|
+| **InDesign 2026 ready** | Color and anchored-object tools work on 2026's renamed enums — no more silent failures after upgrading. |
+| **Real env var config** | Every setting in `.env.example` is now honored: `BRIDGE_PORT`, `HTTP_BRIDGE_ENABLED`, `LOG_LEVEL`, … Invalid values never block startup. |
+| **No more 30s hangs** | If the plugin isn't connected, tool calls fail instantly with "Bridge is not connected" instead of timing out. |
+| **One escaping path** | All handlers share a single battle-tested ExtendScript string escaper. |
+| **Hardened path validation** | File-path checks now use true containment (no prefix-collision escapes). |
+| **Honest status** | `getStatus().connected` reflects actual plugin connectivity, and CI enforces coverage gates. |
+
+<details>
+<summary>What's New in v1.1.0</summary>
 
 | Feature | Tools | What it solves |
 |---------|-------|----------------|
@@ -337,6 +370,30 @@ node dist/index.js
 | **Timeout/maxResults** | `text_getStories`, etc. | Custom limits for large documents. |
 | **MCP resources** | `mcp://tools/inventory` | Agent auto-discovers all tools. |
 
+</details>
+
+---
+
+## ⚙️ Configuration
+
+All settings have defaults — zero config required. To customize, copy `.env.example` to `.env` or pass a JSON file; environment variables win over the file:
+
+```bash
+BRIDGE_PORT=8120            # WebSocket port the UXP plugin connects to
+HTTP_BRIDGE_ENABLED=false   # optional REST fallback bridge
+HTTP_BRIDGE_PORT=3000
+SERVER_TRANSPORT=stdio      # stdio | websocket
+LOG_LEVEL=info              # debug | info | warn | error
+```
+
+Precedence: **environment variables > JSON config file > defaults**. Invalid values are ignored, never fatal.
+
+---
+
+## 🪟 Windows
+
+Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or the new opt-in **COM bridge** that needs no plugin at all. See [WINDOWS.md](WINDOWS.md).
+
 ---
 
 ## 📦 Project Structure
@@ -345,7 +402,7 @@ node dist/index.js
 ├── src/
 │   ├── server/          # MCP server (STDIO transport)
 │   ├── bridge/          # WebSocket bridge + ScriptExecutor
-│   ├── handlers/        # 31 handler modules (183 tools)
+│   ├── handlers/        # 31 handler modules (191 tools)
 │   ├── schemas/         # Zod parameter schemas
 │   ├── core/            # Session tracking
 │   ├── types/           # TypeScript definitions
@@ -391,6 +448,14 @@ npm run lint       # ESLint
 - [ ] **Natural language → layout** — describe a page, get a page
 - [ ] **Batch PDF processing** — apply changes across hundreds of files
 - [ ] **VSCode extension** — control InDesign from your editor
+
+---
+
+## 📚 Deep Dives
+
+- [Origin Story](docs/origin.md) — how this project came to life
+- [Comparison docs](docs/comparison.md) — MCP vs CEP vs ExtendScript in depth
+- [Launch thread](docs/launch-thread.md) — social launch content
 
 ---
 

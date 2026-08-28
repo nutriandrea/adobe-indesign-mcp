@@ -37,6 +37,7 @@ describe('configLoader', () => {
         httpBridge: { enabled: false, port: 3000, host: '127.0.0.1', token: '' },
         server: { transport: 'stdio', name: 'indesign-nutria-mcp', version: '1.0.0' },
         logging: { level: 'info' },
+        comBridge: { enabled: false },
       });
     });
 
@@ -166,5 +167,120 @@ describe('configLoader', () => {
 
       expect(mockExistsSync).toHaveBeenCalledWith(absolutePath);
     });
+  });
+});
+
+describe('configLoader — environment variable support', () => {
+  const ENV_KEYS = [
+    'BRIDGE_PORT', 'BRIDGE_HOST', 'BRIDGE_MAX_PAYLOAD', 'BRIDGE_TIMEOUT',
+    'HTTP_BRIDGE_ENABLED', 'HTTP_BRIDGE_PORT', 'HTTP_BRIDGE_HOST', 'BRIDGE_TOKEN',
+    'SERVER_TRANSPORT', 'SERVER_NAME', 'SERVER_VERSION',
+    'LOG_LEVEL', 'LOG_LEVEL_OVERRIDE',
+  ] as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+    for (const k of ENV_KEYS) delete process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of ENV_KEYS) delete process.env[k];
+  });
+
+  it('applies BRIDGE_* env vars over defaults', () => {
+    process.env.BRIDGE_PORT = '9999';
+    process.env.BRIDGE_HOST = '0.0.0.0';
+    process.env.BRIDGE_TIMEOUT = '45000';
+    process.env.BRIDGE_MAX_PAYLOAD = '2097152';
+
+    const config = loadConfig();
+    expect(config.bridge.port).toBe(9999);
+    expect(config.bridge.host).toBe('0.0.0.0');
+    expect(config.bridge.timeout).toBe(45000);
+    expect(config.bridge.maxPayload).toBe(2097152);
+  });
+
+  it('env overrides values coming from the JSON config file', () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockReturnValue(JSON.stringify({ bridge: { port: 9000 } }));
+    process.env.BRIDGE_PORT = '7777';
+
+    const config = loadConfig('/tmp/whatever.json');
+    expect(config.bridge.port).toBe(7777);
+  });
+
+  it('parses HTTP_BRIDGE_ENABLED as boolean and BRIDGE_TOKEN as string', () => {
+    process.env.HTTP_BRIDGE_ENABLED = 'true';
+    process.env.HTTP_BRIDGE_PORT = '4000';
+    process.env.BRIDGE_TOKEN = 's3cret';
+
+    const config = loadConfig();
+    expect(config.httpBridge.enabled).toBe(true);
+    expect(config.httpBridge.port).toBe(4000);
+    expect(config.httpBridge.token).toBe('s3cret');
+  });
+
+  it('parses SERVER_* and LOG_LEVEL env vars', () => {
+    process.env.SERVER_TRANSPORT = 'websocket';
+    process.env.SERVER_NAME = 'custom-mcp';
+    process.env.LOG_LEVEL = 'debug';
+
+    const config = loadConfig();
+    expect(config.server.transport).toBe('websocket');
+    expect(config.server.name).toBe('custom-mcp');
+    expect(config.logging.level).toBe('debug');
+  });
+
+  it('ignores invalid env values instead of crashing', () => {
+    process.env.BRIDGE_PORT = 'not-a-number';
+    process.env.SERVER_TRANSPORT = 'carrier-pigeon';
+    process.env.HTTP_BRIDGE_ENABLED = 'maybe';
+
+    const config = loadConfig();
+    expect(config.bridge.port).toBe(8120);
+    expect(config.server.transport).toBe('stdio');
+    expect(config.httpBridge.enabled).toBe(false);
+  });
+
+  it('treats empty strings as unset', () => {
+    process.env.BRIDGE_PORT = '';
+    process.env.BRIDGE_TOKEN = '';
+
+    const config = loadConfig();
+    expect(config.bridge.port).toBe(8120);
+    expect(config.httpBridge.token).toBe('');
+  });
+});
+
+describe('configLoader — comBridge (Windows COM opt-in)', () => {
+  const KEYS = ['COM_BRIDGE_ENABLED', 'COM_BRIDGE_CSCRIPT_PATH', 'COM_BRIDGE_VBS_PATH'] as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of KEYS) delete process.env[k];
+  });
+
+  it('defaults to disabled', () => {
+    const config = loadConfig();
+    expect(config.comBridge).toEqual({ enabled: false, cscriptPath: undefined, vbsPath: undefined });
+  });
+
+  it('parses COM_BRIDGE_* env vars', () => {
+    process.env.COM_BRIDGE_ENABLED = 'true';
+    process.env.COM_BRIDGE_CSCRIPT_PATH = 'C:\\Windows\\System32\\cscript.exe';
+    const config = loadConfig();
+    expect(config.comBridge.enabled).toBe(true);
+    expect(config.comBridge.cscriptPath).toBe('C:\\Windows\\System32\\cscript.exe');
+  });
+
+  it('ignores invalid boolean values', () => {
+    process.env.COM_BRIDGE_ENABLED = 'perhaps';
+    expect(loadConfig().comBridge.enabled).toBe(false);
   });
 });

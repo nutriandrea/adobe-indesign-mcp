@@ -10,7 +10,7 @@
 export const EXTENDSCRIPT_HELPERS = `
 // ── InDesign version compatibility (read-only safe) ──
 // InDesign 2026 renames ColorModel.PROCESS_RGB / PROCESS_CMYK to ColorModel.PROCESS.
-// Enum objects are READ-ONLY in 2026, so we never assign to them; we compute a
+// Enum objects are READ-ONLY in 2026, so we never assign to them; we resolve a
 // plain-number constant by READING whichever property exists.
 var __PROCESS_COLOR_MODEL = 1886548851;
 try {
@@ -20,8 +20,8 @@ try {
   }
 } catch (e) {}
 
-// InDesign 2026 renames AnchorPoint.TOP_LEFT → AnchorPoint.TOP_LEFT_ANCHOR etc.
-// Enum objects are READ-ONLY in 2026, so never assign; resolve by READING.
+// InDesign 2026 renames AnchorPoint.TOP_LEFT -> AnchorPoint.TOP_LEFT_ANCHOR etc.
+// Resolve by READING the enum; fall back to known numeric values.
 var __ANCHOR_POINT = function (name) {
   var ap = (typeof AnchorPoint !== 'undefined') ? AnchorPoint : {};
   if (ap[name + '_ANCHOR'] !== undefined) return ap[name + '_ANCHOR'];

@@ -4,6 +4,7 @@ import { formatResponse } from '../utils/errorHandler.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
 import type { ScriptExecutor } from '../bridge/ScriptExecutor.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { escapeExtendScriptString } from "../utils/stringUtils.js";
 
 export class TableHandler implements IHandler {
   public readonly name = 'table';
@@ -210,7 +211,7 @@ export class TableHandler implements IHandler {
   }
 
   private escape(str: string): string {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    return escapeExtendScriptString(str);
   }
 
   private scope(pageIndex?: number): string {

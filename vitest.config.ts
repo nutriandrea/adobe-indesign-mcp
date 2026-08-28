@@ -8,10 +8,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
-      lines: 85,
-      functions: 85,
-      branches: 80,
-      statements: 85,
+      thresholds: {
+        lines: 85,
+        functions: 85,
+        branches: 80,
+        statements: 85,
+      },
     },
     testTimeout: 30000,
   },
