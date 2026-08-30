@@ -40,6 +40,13 @@ export class StyleHandler implements IHandler {
         inputSchema: {
           name: z.string(),
           basedOn: z.string().optional(),
+          pointSize: z.number().positive().optional(),
+          fontFamily: z.string().optional(),
+          fontStyle: z.string().optional(),
+          color: z.string().optional(),
+          leading: z.number().positive().optional(),
+          spaceBefore: z.number().min(0).optional(),
+          spaceAfter: z.number().min(0).optional(),
           properties: z.record(z.unknown()).optional(),
         },
         handler: compose(withLogging('style_createParagraph'), withErrorHandling())(this.createParagraph.bind(this)),
@@ -50,6 +57,10 @@ export class StyleHandler implements IHandler {
         inputSchema: {
           name: z.string(),
           basedOn: z.string().optional(),
+          pointSize: z.number().positive().optional(),
+          fontFamily: z.string().optional(),
+          fontStyle: z.string().optional(),
+          color: z.string().optional(),
           properties: z.record(z.unknown()).optional(),
         },
         handler: compose(withLogging('style_createCharacter'), withErrorHandling())(this.createCharacter.bind(this)),
@@ -91,9 +102,15 @@ export class StyleHandler implements IHandler {
       var styles = app.activeDocument.paragraphStyles;
       var result = [];
       for (var i = 0; i < styles.length; i++) {
+        // basedOn THROWS on the root style ("Invalid request on a root style")
+        var bo = null;
+        try { bo = styles[i].basedOn ? styles[i].basedOn.name : null; } catch (e) { bo = null; }
+        var ps = null;
+        try { ps = styles[i].pointSize; } catch (e) { ps = null; }
         result.push({
           name: styles[i].name,
-          basedOn: styles[i].basedOn ? styles[i].basedOn.name : null,
+          basedOn: bo,
+          pointSize: ps,
           properties: {}
         });
       }
@@ -108,9 +125,14 @@ export class StyleHandler implements IHandler {
       var styles = app.activeDocument.characterStyles;
       var result = [];
       for (var i = 0; i < styles.length; i++) {
+        var bo = null;
+        try { bo = styles[i].basedOn ? styles[i].basedOn.name : null; } catch (e) { bo = null; }
+        var ps = null;
+        try { ps = styles[i].pointSize; } catch (e) { ps = null; }
         result.push({
           name: styles[i].name,
-          basedOn: styles[i].basedOn ? styles[i].basedOn.name : null,
+          basedOn: bo,
+          pointSize: ps,
           properties: {}
         });
       }
@@ -125,9 +147,11 @@ export class StyleHandler implements IHandler {
       var styles = app.activeDocument.objectStyles;
       var result = [];
       for (var i = 0; i < styles.length; i++) {
+        var bo = null;
+        try { bo = styles[i].basedOn ? styles[i].basedOn.name : null; } catch (e) { bo = null; }
         result.push({
           name: styles[i].name,
-          basedOn: styles[i].basedOn ? styles[i].basedOn.name : null,
+          basedOn: bo,
           properties: {}
         });
       }
@@ -138,19 +162,68 @@ export class StyleHandler implements IHandler {
   }
 
   private async createParagraph(args: unknown, _extra: any): Promise<ToolResult> {
-    const params = z.object({ name: z.string(), basedOn: z.string().optional(), properties: z.record(z.unknown()).optional() }).parse(args as Record<string, unknown>);
+    const params = z.object({
+      name: z.string(),
+      basedOn: z.string().optional(),
+      pointSize: z.number().positive().optional(),
+      fontFamily: z.string().optional(),
+      fontStyle: z.string().optional(),
+      color: z.string().optional(),
+      leading: z.number().positive().optional(),
+      spaceBefore: z.number().min(0).optional(),
+      spaceAfter: z.number().min(0).optional(),
+      properties: z.record(z.unknown()).optional(),
+    }).parse(args as Record<string, unknown>);
     const escName = this.escape(params.name);
-    const basedOnCode = params.basedOn ? `, {basedOn: app.activeDocument.paragraphStyles.item("${this.escape(params.basedOn)}")}` : '';
-    const code = `app.activeDocument.paragraphStyles.add({name: "${escName}"${basedOnCode}}); "created"`;
+    const props: string[] = [`name: "${escName}"`];
+    if (params.basedOn) {
+      props.push(`basedOn: app.activeDocument.paragraphStyles.item("${this.escape(params.basedOn)}")`);
+    }
+    if (params.pointSize !== undefined) props.push(`pointSize: ${params.pointSize}`);
+    if (params.fontFamily !== undefined) props.push(`appliedFont: "${this.escape(params.fontFamily)}"`);
+    if (params.fontStyle !== undefined) props.push(`fontStyle: "${this.escape(params.fontStyle)}"`);
+    if (params.color !== undefined) props.push(`fillColor: "${this.escape(params.color)}"`);
+    if (params.leading !== undefined) props.push(`leading: ${params.leading}`);
+    if (params.spaceBefore !== undefined) props.push(`spaceBefore: ${params.spaceBefore}`);
+    if (params.spaceAfter !== undefined) props.push(`spaceAfter: ${params.spaceAfter}`);
+    // Free-form property passthrough (e.g. {hyphenation: false, keepWithNext: true})
+    if (params.properties && typeof params.properties === 'object') {
+      for (const [key, value] of Object.entries(params.properties)) {
+        if (value === undefined) continue;
+        props.push(`${key}: ${JSON.stringify(value)}`);
+      }
+    }
+    const code = `app.activeDocument.paragraphStyles.add({${props.join(', ')}}); "created"`;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);
   }
 
   private async createCharacter(args: unknown, _extra: any): Promise<ToolResult> {
-    const params = z.object({ name: z.string(), basedOn: z.string().optional(), properties: z.record(z.unknown()).optional() }).parse(args as Record<string, unknown>);
+    const params = z.object({
+      name: z.string(),
+      basedOn: z.string().optional(),
+      pointSize: z.number().positive().optional(),
+      fontFamily: z.string().optional(),
+      fontStyle: z.string().optional(),
+      color: z.string().optional(),
+      properties: z.record(z.unknown()).optional(),
+    }).parse(args as Record<string, unknown>);
     const escName = this.escape(params.name);
-    const basedOnCode = params.basedOn ? `, {basedOn: app.activeDocument.characterStyles.item("${this.escape(params.basedOn)}")}` : '';
-    const code = `app.activeDocument.characterStyles.add({name: "${escName}"${basedOnCode}}); "created"`;
+    const props: string[] = [`name: "${escName}"`];
+    if (params.basedOn) {
+      props.push(`basedOn: app.activeDocument.characterStyles.item("${this.escape(params.basedOn)}")`);
+    }
+    if (params.pointSize !== undefined) props.push(`pointSize: ${params.pointSize}`);
+    if (params.fontFamily !== undefined) props.push(`appliedFont: "${this.escape(params.fontFamily)}"`);
+    if (params.fontStyle !== undefined) props.push(`fontStyle: "${this.escape(params.fontStyle)}"`);
+    if (params.color !== undefined) props.push(`fillColor: "${this.escape(params.color)}"`);
+    if (params.properties && typeof params.properties === 'object') {
+      for (const [key, value] of Object.entries(params.properties)) {
+        if (value === undefined) continue;
+        props.push(`${key}: ${JSON.stringify(value)}`);
+      }
+    }
+    const code = `app.activeDocument.characterStyles.add({${props.join(', ')}}); "created"`;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);
   }

@@ -411,6 +411,20 @@ Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
+## 🙏 Acknowledgements
+
+- **[@graydini](https://github.com/graydini)** — pioneered the Windows COM bridge
+  architecture (persistent `cscript` + `DoScript` over WebSocket, `NEVER_INTERACT`,
+  singleton bridge) in [PR #1](https://github.com/nutriandrea/adobe-indesign-mcp/pull/1),
+  and uncovered the InDesign 2026 API incompatibilities (renamed/read-only
+  `ColorModel` & `AnchorPoint` enums, `InsertionPoint` targets removed from `move()`)
+  that shaped the official Windows support. Additional fixes landed on `main`:
+  safe `basedOn`/`pointSize` reads in style listing, rich style-creation parameters,
+  `\n` → paragraph-break normalization in text content, and an `eval`-free JSON
+  polyfill that survives the ExtendScript sanitizer.
+
+---
+
 ## 📄 License
 
 MIT © Andrea Cacioppo

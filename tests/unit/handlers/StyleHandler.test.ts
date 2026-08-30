@@ -48,7 +48,7 @@ describe('StyleHandler', () => {
     it('should call executor with code iterating paragraphStyles', async () => {
       const mock = createMockExecutor();
       mock.execute.mockResolvedValue({
-        result: [{ name: '[Basic Paragraph]', basedOn: null, properties: {} }],
+        result: [{ name: '[Basic Paragraph]', basedOn: null, pointSize: 12, properties: {} }],
       });
       const handler = new StyleHandler(mock as any);
 
@@ -60,6 +60,19 @@ describe('StyleHandler', () => {
       expect(code).toContain('paragraphStyles');
       expect(code).toContain('JSON.stringify');
       expect(result.content[0]).toHaveProperty('type', 'text');
+    });
+
+    it('should guard basedOn/pointSize reads that throw on the root style', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: 'ok' });
+      const handler = new StyleHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'style_listParagraph')!;
+      await tool.handler({}, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('try { bo = styles[i].basedOn ? styles[i].basedOn.name : null; } catch (e)');
+      expect(code).toContain('pointSize');
     });
   });
 
@@ -141,6 +154,41 @@ describe('StyleHandler', () => {
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('basedOn');
       expect(code).toContain('Base Style');
+    });
+
+    it('should map rich formatting params onto the style', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: 'created' });
+      const handler = new StyleHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'style_createParagraph')!;
+      await tool.handler({
+        name: 'Body Text',
+        pointSize: 12,
+        fontFamily: 'Fraunces',
+        fontStyle: 'Medium',
+        leading: 14.5,
+        spaceAfter: 6,
+      }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('pointSize: 12');
+      expect(code).toContain('appliedFont: "Fraunces"');
+      expect(code).toContain('fontStyle: "Medium"');
+      expect(code).toContain('leading: 14.5');
+      expect(code).toContain('spaceAfter: 6');
+    });
+
+    it('should pass through free-form properties', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: 'created' });
+      const handler = new StyleHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'style_createParagraph')!;
+      await tool.handler({ name: 'Wide', properties: { keepWithNext: true } }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('keepWithNext: true');
     });
   });
 
