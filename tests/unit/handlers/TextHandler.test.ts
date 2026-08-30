@@ -80,7 +80,9 @@ describe('TextHandler', () => {
       }, {});
 
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('\\n');
+      // newlines are normalized to the ExtendScript paragraph break before escaping
+      expect(code).toContain('\\' + 'r');
+      expect(code).not.toContain('\\' + 'n');
       expect(code).toContain('\\"');
       expect(code).toContain('\\\\');
     });
@@ -144,7 +146,9 @@ describe('TextHandler', () => {
 
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('\\"');
-      expect(code).toContain('\\n');
+      // newline in content is normalized to the ExtendScript paragraph break
+      expect(code).toContain('\\' + 'r');
+      expect(code).not.toContain('\\' + 'n');
     });
   });
 
