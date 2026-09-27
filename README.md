@@ -21,7 +21,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
   <a href="#"><img src="https://img.shields.io/badge/tools-194-7c3aed?style=flat" alt="tools"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-963-22c55e?style=flat" alt="tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-966-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
@@ -196,6 +196,14 @@ UXP panel. See [WINDOWS.md](WINDOWS.md) for the Windows bridge and
 
 `tests/contract/toolInventory.test.ts` pins this number, so the table cannot
 drift from the code without failing CI.
+
+Verified end-to-end against InDesign 2026 (21.3) on the plugin-free macOS path:
+MCP stdio → WebSocket bridge → JXA proxy → InDesign, creating a document,
+adding a text frame, reading it back, and closing.
+
+> **Calling `document_close` from an agent?** `saveOptions` defaults to `ask`,
+> which raises a modal dialog in InDesign and blocks the script until the bridge
+> times out. Pass `saveOptions: "yes"` or `"no"` explicitly.
 
 ### MCP Resources
 
@@ -418,7 +426,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ├── jxa-driver.js        # Runs one ExtendScript inside InDesign
 ├── start-bridge.sh      # Launches InDesign + the proxy
 ├── skills/              # Agent-facing skills shipped with the server
-├── tests/               # 963 tests (vitest)
+├── tests/               # 966 tests (vitest)
 ├── .opencode/skills/    # 10 AI agent skills
 ├── docs/                # Documentation and fork audits
 ├── media/               # Social preview, hero images
@@ -441,7 +449,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ## 🧪 Development
 
 ```bash
-npm test           # Run 963 tests
+npm test           # Run 966 tests
 npm run test:watch # Watch mode
 npm run build      # TypeScript compile
 npm run lint       # ESLint

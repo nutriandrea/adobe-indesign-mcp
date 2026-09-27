@@ -181,8 +181,15 @@ export class IndesignMcpServer {
   }
 
   async start(): Promise<void> {
-    // Start bridge server if using websocket transport
-    if (this.config.server.transport === 'websocket') {
+    // The WebSocket bridge is how InDesign is reached — the UXP plugin and the
+    // macOS JXA proxy both connect to it. It is independent of the MCP
+    // transport: 'stdio' is the MCP transport, the bridge is still a WebSocket
+    // listener. Gating this on transport === 'websocket' meant the default
+    // configuration never opened the bridge at all.
+    //
+    // The one exception is the Windows COM bridge, which drives InDesign
+    // in-process and needs no listener.
+    if (!this.config.comBridge.enabled) {
       this.bridgeServer = new BridgeServer(this.config.bridge, this.executor);
       await this.bridgeServer.start();
 
