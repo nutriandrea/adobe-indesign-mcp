@@ -39,6 +39,7 @@
     "test:watch": "vitest",
     "build": "tsc",
     "lint": "eslint src/",
+    "smoke:macos": "node scripts/smoke-macos.mjs",
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {

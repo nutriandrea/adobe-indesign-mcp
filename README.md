@@ -449,11 +449,32 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ## 🧪 Development
 
 ```bash
-npm test           # Run 966 tests
-npm run test:watch # Watch mode
-npm run build      # TypeScript compile
-npm run lint       # ESLint
+npm test            # Run 966 tests
+npm run test:watch  # Watch mode
+npm run build       # TypeScript compile
+npm run lint        # ESLint
 ```
+
+### Live smoke test (macOS)
+
+```bash
+npm run smoke:macos
+```
+
+`npm test` covers the handlers, the protocol and the startup sequence, but it
+cannot see the seams between the four separate processes on the plugin-free
+macOS path. That gap is not hypothetical: 965 tests once passed against a build
+whose bridge never listened on its port, so every tool call failed in the field
+and nothing went red.
+
+`smoke:macos` drives the real chain — MCP stdio → WebSocket bridge → JXA proxy →
+InDesign — against a running InDesign, creating a document, writing to it,
+reading it back, and closing it. It creates one unsaved document and cleans up
+after itself. It needs a desktop app, so it is not part of `npm test` and does
+not run on CI; it exits 0 with a SKIP notice if InDesign is not open.
+
+Run it by hand before releasing a change to the bridge, the protocol, the proxy
+or the driver.
 
 ---
 
