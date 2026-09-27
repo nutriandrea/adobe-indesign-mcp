@@ -28,6 +28,15 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const DRIVER = join(REPO_ROOT, 'jxa-driver.js');
 const BOGUS_APP = 'NoSuchApplicationForTests0000';
 
+/**
+ * The execution tests below spawn the real osascript, which exists only on
+ * macOS. CI runs this matrix on Ubuntu, where osascript is absent and every one
+ * of them fails on `JSON.parse('')` — so they are skipped off darwin. The static
+ * source check above is platform-independent and still runs everywhere, which
+ * matters: it is exactly the regression a macOS-only job would never catch.
+ */
+const isMacOS = process.platform === 'darwin';
+
 let scriptDir: string;
 
 function writeScript(name: string, code: string): string {
@@ -69,7 +78,7 @@ afterAll(() => {
 });
 
 describe('jxa-driver.js real execution', () => {
-  it('is actually invoked, and reports a failure as parseable JSON', async () => {
+  it.skipIf(!isMacOS)('is actually invoked, and reports a failure as parseable JSON', async () => {
     const script = writeScript('valid.jsx', 'app.documents.length');
     const run = await runDriver(script);
 
@@ -98,13 +107,13 @@ describe('jxa-driver.js real execution', () => {
     ).toBe(false);
   });
 
-  it('exits cleanly so a failed call is not a transport failure', async () => {
+  it.skipIf(!isMacOS)('exits cleanly so a failed call is not a transport failure', async () => {
     const script = writeScript('clean.jsx', '1');
     const run = await runDriver(script);
     expect(run.code).toBe(0);
   });
 
-  it('reports a missing script file as an error, not silence', async () => {
+  it.skipIf(!isMacOS)('reports a missing script file as an error, not silence', async () => {
     const run = await runDriver(join(scriptDir, 'does-not-exist.jsx'));
     const result = resultOf(run);
     expect(result).not.toBe('');
@@ -112,14 +121,14 @@ describe('jxa-driver.js real execution', () => {
     expect(typeof parsed.__bridge_error).toBe('string');
   });
 
-  it('reports an empty script as an error, not a blank success', async () => {
+  it.skipIf(!isMacOS)('reports an empty script as an error, not a blank success', async () => {
     const script = writeScript('empty.jsx', '');
     const run = await runDriver(script);
     const parsed = JSON.parse(resultOf(run)) as { __bridge_error?: string };
     expect(parsed.__bridge_error).toBe('empty script file');
   });
 
-  it('passes the script path through argv without mangling spaces and quotes', async () => {
+  it.skipIf(!isMacOS)('passes the script path through argv without mangling spaces and quotes', async () => {
     // The bug this replaces was shell -e quoting, which corrupted any quote or
     // backslash. A path full of them must still be read back correctly.
     const nasty = join(scriptDir, "a b'c\"d\\e.jsx");
