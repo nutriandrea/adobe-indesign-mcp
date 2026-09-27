@@ -3,8 +3,12 @@
  *
  * Reads the ExtendScript from a temp file (no shell quoting anywhere) and
  * executes it in InDesign via app.doScript. Reports InDesign-side failures
- * as { __bridge_error: "..." } JSON on stdout, which the proxy forwards as
- * a canonical type:'error' response.
+ * as { __bridge_error: "..." } JSON, which the proxy forwards as a canonical
+ * type:'error' response.
+ *
+ * Note: osascript invokes run(argv) itself when the script declares it, and
+ * there is no global `argv`. Adding an explicit `run(argv);` at the bottom
+ * throws "ReferenceError: Can't find variable: argv (-2700)".
  */
 ObjC.import('Foundation');
 
@@ -24,8 +28,8 @@ function run(argv) {
   }
   if (!code) return JSON.stringify({ __bridge_error: 'empty script file' });
 
-  var app = Application(appName);
   try {
+    var app = Application(appName);
     var r = app.doScript(code, { language: 'javascript' });
     if (r === null || r === undefined) return '';
     // Wrapped tool scripts return strings (JSON.stringify output), but be

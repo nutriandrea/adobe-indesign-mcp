@@ -21,7 +21,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
   <a href="#"><img src="https://img.shields.io/badge/tools-194-7c3aed?style=flat" alt="tools"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-957-22c55e?style=flat" alt="tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-963-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
@@ -418,7 +418,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ├── jxa-driver.js        # Runs one ExtendScript inside InDesign
 ├── start-bridge.sh      # Launches InDesign + the proxy
 ├── skills/              # Agent-facing skills shipped with the server
-├── tests/               # 957 tests (vitest)
+├── tests/               # 963 tests (vitest)
 ├── .opencode/skills/    # 10 AI agent skills
 ├── docs/                # Documentation and fork audits
 ├── media/               # Social preview, hero images
@@ -441,7 +441,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ## 🧪 Development
 
 ```bash
-npm test           # Run 957 tests
+npm test           # Run 963 tests
 npm run test:watch # Watch mode
 npm run build      # TypeScript compile
 npm run lint       # ESLint
