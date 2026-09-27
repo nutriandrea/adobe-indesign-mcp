@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { BridgeRequest, BridgeResponse, BridgeStatus } from '../types/index.js';
 import { InDesignError } from '../utils/errorHandler.js';
 import { wrapExtendScript } from './wrapExtendScript.js';
+import { acceptedTypesDescription, normalizeResponseType } from './protocol.js';
 
 export class ScriptExecutor extends EventEmitter {
   private pending: Map<string, { resolve: (res: BridgeResponse) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }> = new Map();
@@ -69,7 +70,22 @@ export class ScriptExecutor extends EventEmitter {
     clearTimeout(pending.timer);
     this.pending.delete(response.id);
 
-    if (response.type === 'error') {
+    const type = normalizeResponseType(response.type);
+    if (type === null) {
+      // Unknown response type is a protocol violation. It used to fall into
+      // the success branch and resolve silently — the exact failure mode
+      // that hid bridge errors on macOS for months. Reject loudly instead.
+      pending.reject(
+        new InDesignError(
+          `Bridge protocol violation: unknown response type '${String(response.type)}' ` +
+            `(expected ${acceptedTypesDescription()})`,
+          'BRIDGE_PROTOCOL_ERROR',
+        ),
+      );
+      return;
+    }
+
+    if (type === 'error') {
       pending.reject(
         new InDesignError(response.error ?? 'Unknown bridge error', 'BRIDGE_ERROR'),
       );

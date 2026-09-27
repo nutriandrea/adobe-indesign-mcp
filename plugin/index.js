@@ -199,7 +199,7 @@
 
       const response = {
         id: requestId,
-        type: 'success',
+        type: 'result',
         result: result !== null && result !== undefined ? String(result) : 'null',
       };
       ws.send(JSON.stringify(response));
