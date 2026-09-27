@@ -142,4 +142,58 @@ describe('tool inventory guard', () => {
     }
     expect(offenders, `Malformed tool metadata:\n${offenders.join('\n')}`).toEqual([]);
   });
+
+  /**
+   * The README handler table is a hand-maintained mirror of the registry, and
+   * it drifted for three releases: it listed 31 handlers instead of 33, under-
+   * counted Export, and omitted Changes and Preview entirely. Parse the table
+   * and compare it to the real registry so that cannot happen again.
+   */
+  describe('README handler table', () => {
+    async function readmeTable(): Promise<Map<string, number>> {
+      const { readFileSync } = await import('node:fs');
+      const { fileURLToPath } = await import('node:url');
+      const { dirname, join } = await import('node:path');
+      const readme = readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), '../../README.md'),
+        'utf-8',
+      );
+      // Scope to the catalog section — the rest of the README has other tables
+      // whose first cell is bold too.
+      const section = readme.split('### Full Handler Catalog')[1]?.split('\n## ')[0] ?? '';
+      const rows = section.split('\n').filter((line) => /^\|\s*\*\*[A-Za-z]+\*\*\s*\|/.test(line));
+      const counts = new Map<string, number>();
+      for (const row of rows) {
+        const [, handler, tools] = row.split('|');
+        counts.set(handler.replace(/\*/g, '').trim(), Number(tools.replace(/\*/g, '').trim()));
+      }
+      return counts;
+    }
+
+    it('lists the same handlers as the registry, with the same counts', async () => {
+      const [table, handlers] = await Promise.all([readmeTable(), loadHandlers()]);
+
+      const real = new Map(handlers.map((h) => [h.name.replace('Handler', ''), h.tools.length]));
+
+      expect(
+        [...real.keys()].filter((name) => !table.has(name)),
+        'Handlers missing from the README table',
+      ).toEqual([]);
+
+      const mismatched = [...real.entries()].filter(([name, count]) => table.get(name) !== count);
+      expect(
+        mismatched.map(([name, count]) => `${name}: README says ${table.get(name)}, real is ${count}`),
+        'README handler table has stale tool counts',
+      ).toEqual([]);
+    });
+
+    it('sums to the advertised tool count', async () => {
+      const table = await readmeTable();
+      const total = [...table.values()].reduce((sum, count) => sum + count, 0);
+      expect(
+        total,
+        `README table sums to ${total}, not ${EXPECTED_TOOL_COUNT}`,
+      ).toBe(EXPECTED_TOOL_COUNT);
+    });
+  });
 });

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-09-27
+
+Merges the fixes contributed through the forks, plus regression tests for each.
+
+### Fixed
+- **Bridge responses are canonical and cannot be silently swallowed**: the protocol declared both `result` and `error`, but a single `else` branch resolved *every* response — including malformed and unknown-typed ones — as a success. The server now emits `{ type: 'result' | 'error', id, result | error }`, accepts the legacy `success` / `response` types on input, rejects an unknown type that carries a valid `id`, and discards frames with no `id`
+- **The macOS JXA proxy mangled or lost script results** (from [PR #22](https://github.com/nutriandrea/adobe-indesign-mcp/pull/22), @advaitakelkar): `osascript` writes script *results* to **stderr**, so successful calls were read as failures; scripts were passed through shell `-e` quoting, which corrupts any quote, backslash or newline; and the app name was hardcoded to "Adobe InDesign 2024", so every other InDesign version failed
+- **`bridge-proxy.mjs` no longer blocks the MCP server**: `execSync` froze the Node event loop for the whole duration of every script, so the server could not answer, ping or reconnect while InDesign worked. Execution is now asynchronous
+- **The plugin handshake was executed as ExtendScript**: the connection test was passed through `app.doScript`, where it was parsed as a script rather than run as JXA
+- **The MCP Bridge panel required a click to connect**, so it appeared dead even with the server already running (from @ijeetu). It now connects on open, and the button and auto-connect share one URL constant instead of two divergent defaults
+- **Object results from `doScript` came back as `[object Object]`** instead of JSON
+- **The shipped `indesign-nutria-mcp.json` declared `transport: "websocket"`**, contradicting both the config default and the actual runtime; it is now `stdio`
+- **InDesign 2026 anchoring**: creating an anchored object no longer relies on `move()`, which 2026 rejects for insertion-point targets
+
+### Added
+- **Plugin-free macOS setup**: `start-bridge.sh` launches InDesign and the JXA proxy, so no UXP panel has to be loaded. `bridge-proxy.mjs` gained `INDESIGN_APP`, `BRIDGE_WS_URL`, `BRIDGE_TIMEOUT_MS` and `BRIDGE_RECONNECT_DELAY_MS`
+- **FIFO execution queue** in the JXA proxy: InDesign is single-threaded, so requests serialize in arrival order while the event loop stays free
+- **`skills/indesign/indesign-mcp-layout`**: agent-facing guidance on preferring typed tools over raw ExtendScript, plus the COM property limits (`fontFamily`, `italic`, `weight` throw) and read-only enum traps
+- **Documented the no-cancellation hazard**: a hung script leaves the Windows COM bridge wedged, because the timeout rejects the request without killing `cscript` and `ensureProcess()` only respawns a dead process. The macOS proxy is unaffected — `execFile`'s `timeout` terminates the child
+- 32 new unit tests: bridge protocol matrix, proxy config, JXA transport, FIFO queue, plugin bundle agreement, shipped-config guards, and a README/registry consistency guard
+
+### Changed
+- `.gitignore` now keeps root-level debug `.jsx` files, `*.local.jsx` and `win-bridge-local/` out of the repository. Two scratch scripts on a contributor branch hardcoded a personal Windows path
+- Removed the npm badge and install claims from the README: the package has never been published, and the badge resolved to a 404
+- Acknowledgements now credit each contribution specifically — @graydini (Windows COM bridge, 2026 API incompatibilities), @advaitakelkar (JXA result/quoting/version bugs), @ijeetu (panel auto-connect, JSON polyfill sanitizer)
+- `docs/forks/graydini-windows-com-bridge-audit.md` records a file-by-file audit of that branch: what was adopted, what was rejected as superseded, and why
+
 ## [1.4.1] - 2026-08-24
 
 ### Fixed
@@ -66,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom timeout/maxResults limits for large documents
 - MCP resources: `mcp://tools/inventory` for agent auto-discovery
 
+[1.4.2]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.2.0...v1.3.0
