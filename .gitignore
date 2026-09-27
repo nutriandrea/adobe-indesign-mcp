@@ -18,3 +18,11 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scratch ExtendScript at the repo root — developer debug scripts, never part
+# of the package. Machine-specific paths leak into these.
+/*.jsx
+/*.local.jsx
+
+# Local Windows COM bridge scratch (machine-specific artifacts stay local)
+win-bridge-local/

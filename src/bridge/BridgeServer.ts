@@ -1,8 +1,9 @@
 import { createServer, type Server } from 'http';
 import { EventEmitter } from 'events';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { BridgeResponse, BridgeStatus } from '../types/index.js';
+import type { BridgeStatus } from '../types/index.js';
 import { ScriptExecutor } from './ScriptExecutor.js';
+import { acceptedTypesDescription, parseBridgeMessage } from './protocol.js';
 import { logger } from '../utils/logger.js';
 
 const DEFAULT_HEALTH_CHECK_INTERVAL = 30000;  // 30s
@@ -78,7 +79,18 @@ export class BridgeServer {
               this.events.emit(parsed.name, parsed.payload ?? {});
               return;
             }
-            this.executor.handleResponse(parsed as BridgeResponse);
+            // Normalize at the boundary: accept legacy success spellings
+            // ('success', 'response') from older plugins, route unknown types
+            // as loud errors, and drop only what cannot be routed at all.
+            const parsedMessage = parseBridgeMessage(parsed);
+            if (parsedMessage.kind === 'unroutable') {
+              logger.warn(
+                'Dropping invalid bridge message: not a recognized response shape',
+                { reason: parsedMessage.reason, protocol: acceptedTypesDescription() },
+              );
+              return;
+            }
+            this.executor.handleResponse(parsedMessage.response);
           } catch (err) {
             logger.error('Invalid bridge message', { error: err instanceof Error ? err.message : String(err) });
           }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IndesignMcpServer } from '../../src/server/IndesignMcpServer.js';
 import { ExpressBridgeServer } from '../../src/bridge/ExpressBridgeServer.js';
+import { BridgeServer } from '../../src/bridge/BridgeServer.js';
 import type { AppConfig } from '../../src/utils/configLoader.js';
 
 vi.mock('../../src/bridge/ExpressBridgeServer.js', () => ({
@@ -23,6 +24,15 @@ vi.mock('../../src/bridge/BridgeServer.js', () => ({
   BridgeServer: vi.fn(() => ({
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
+    events: { on: vi.fn() },
+  })),
+}));
+
+vi.mock('../../src/bridge/ComScriptExecutor.js', () => ({
+  ComScriptExecutor: vi.fn(() => ({
+    execute: vi.fn().mockResolvedValue({ success: true, data: null }),
+    cancelAll: vi.fn(),
+    getStatus: vi.fn().mockReturnValue({}),
   })),
 }));
 
@@ -80,6 +90,67 @@ describe('IndesignMcpServer Lifecycle', () => {
     // ExpressBridgeServer.start() is mocked so it resolves
     // Stdio transport connect may fail, but that's a separate concern
     await expect(server.start()).resolves.not.toThrow();
+  });
+});
+
+describe('WebSocket bridge startup', () => {
+  /**
+   * The bridge is how InDesign is reached in every configuration that uses
+   * ScriptExecutor — the UXP plugin, and the macOS JXA proxy. It was gated
+   * behind `transport === 'websocket'`, but 'stdio' is the default MCP
+   * transport, so the default configuration never opened the bridge: no
+   * client could connect and every tool call failed with "Bridge is not
+   * connected". MCP transport and the InDesign bridge are independent
+   * concerns and must not be coupled.
+   */
+  it('starts the WebSocket bridge on the default stdio transport', async () => {
+    vi.mocked(BridgeServer).mockClear();
+    const server = new IndesignMcpServer(mockConfig);
+    try {
+      await server.start();
+    } catch {
+      /* stdio transport may fail in CI; the bridge decision is what matters */
+    }
+    expect(mockConfig.server.transport).toBe('stdio');
+    expect(BridgeServer).toHaveBeenCalledWith(
+      expect.objectContaining({ port: 8120, host: '127.0.0.1' }),
+      expect.any(Object),
+    );
+  });
+
+  it('still starts the bridge when the MCP transport is websocket', async () => {
+    vi.mocked(BridgeServer).mockClear();
+    const server = new IndesignMcpServer({
+      ...mockConfig,
+      server: { ...mockConfig.server, transport: 'websocket' },
+    });
+    try {
+      await server.start();
+    } catch {
+      /* see above */
+    }
+    expect(BridgeServer).toHaveBeenCalled();
+  });
+
+  it('skips the WebSocket bridge when the Windows COM executor is in use', async () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    vi.mocked(BridgeServer).mockClear();
+    try {
+      const server = new IndesignMcpServer({
+        ...mockConfig,
+        comBridge: { enabled: true },
+      } as typeof mockConfig);
+      try {
+        await server.start();
+      } catch {
+        /* see above */
+      }
+      // COM talks to InDesign in-process; a WebSocket listener would be dead weight.
+      expect(BridgeServer).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    }
   });
 });
 

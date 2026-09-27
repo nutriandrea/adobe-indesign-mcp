@@ -53,6 +53,28 @@ describe('ScriptExecutor', () => {
     await expect(executor.execute('bad code')).rejects.toThrow('bad code');
   });
 
+  it('should reject on unknown response type instead of resolving as success', async () => {
+    executor.on('request', (req) => {
+      setTimeout(() => {
+        // Cast simulates a misbehaving bridge client sending a bogus type —
+        // this used to fall into the success branch and resolve silently.
+        executor.handleResponse({ id: req.id, type: 'ok' as 'result', result: 'x' });
+      }, 0);
+    });
+
+    await expect(executor.execute('code')).rejects.toThrow(/unknown response type 'ok'/);
+  });
+
+  it('should default to a generic error message when an error response omits one', async () => {
+    executor.on('request', (req) => {
+      setTimeout(() => {
+        executor.handleResponse({ id: req.id, type: 'error', error: undefined as unknown as string });
+      }, 0);
+    });
+
+    await expect(executor.execute('code')).rejects.toThrow('Unknown bridge error');
+  });
+
   it('should reject on timeout', async () => {
     vi.useFakeTimers();
     executor = new ScriptExecutor(5000);

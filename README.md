@@ -19,14 +19,17 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat&logo=npm&label=version&color=7c3aed" alt="npm version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
   <a href="#"><img src="https://img.shields.io/badge/tools-194-7c3aed?style=flat" alt="tools"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-747-22c55e?style=flat" alt="tests"></a>
-  <a href="#"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-966-22c55e?style=flat" alt="tests"></a>
+  <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
 </p>
+
+> **Not published to npm.** This server drives a local desktop application, so
+> install it from the repository — see [Quick Start](#-quick-start-30-seconds).
+> Until a release exists, the npm badge would only send you to a 404.
 
 ---
 
@@ -34,7 +37,8 @@
 
 **InDesign automation has been broken for 20 years.** ExtendScript is ancient. CEP panels are over-engineered. UXP scripting requires a CS degree. You just want AI to do the layout.
 
-This MCP server fixes that. One `npm install` and your AI agent controls InDesign like a puppeteer.
+This MCP server fixes that. Clone it, point your agent at it, and InDesign is
+yours to drive like a puppeteer.
 
 ### 🆚 MCP vs The Old Ways
 
@@ -130,11 +134,26 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 ┌─────────────────────┐       STDIO        ┌──────────────────────┐     WebSocket     ┌──────────────────┐
 │  Any AI Agent       │ ◄────────────────► │  indesign-nutria-mcp │ ◄───────────────► │  Adobe InDesign   │
 │  (Claude, OpenCode, │                    │  (Node.js MCP Server) │     port 8120     │  + UXP Plugin     │
-│   Cursor, etc.)     │                    │  31 handlers         │                    │  + ExtendScript    │
+│   Cursor, etc.)     │                    │  33 handlers         │                    │  + ExtendScript    │
 └─────────────────────┘                    │  194 tools           │                    └──────────────────┘
                                            │  10 AI skills        │
                                            └──────────────────────┘
 ```
+
+### Two ways to reach InDesign
+
+The MCP protocol always speaks stdio. Only the last hop differs, and you pick
+one per platform:
+
+| | macOS | Windows |
+|---|---|---|
+| **With plugin** | UXP panel in `plugin/` | UXP panel in `plugin/` |
+| **Without plugin** | `node bridge-proxy.mjs` (JXA/osascript) | `COM_BRIDGE_ENABLED=true` (in-process COM) |
+
+Both are supported. The plugin is the richer path (it also emits change
+events); the proxy exists for setups where you cannot or do not want to load a
+UXP panel. See [WINDOWS.md](WINDOWS.md) for the Windows bridge and
+`start-bridge.sh` for the macOS one.
 
 ### Full Handler Catalog
 
@@ -142,11 +161,12 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 |---------|-------|-------------|
 | **AnchoredObject** | 5 | create, getSettings, release, setPosition, setProperties |
 | **Book** | 4 | list, open, getDocuments, synchronize |
+| **Changes** | 1 | getStatus — what changed since T?, without touching InDesign |
 | **Color** | 6 | swatch CRUD, inks, gradients, apply |
 | **DataMerge** | 5 | selectDataSource, listFields, mergeRecords, export, removeDataSource |
-| **Document** | **8** | create/open/save/close, getInfo, listOpen, **getPageStories, getStoryPages** |
+| **Document** | 8 | create/open/save/close, getInfo, listOpen, **getPageStories, getStoryPages** |
 | **Effect** | 4 | drop shadow, feather, transparency, gradient feather |
-| **Export** | **9** | multi-format export, preflight, fonts/swatches/tables, **script_run** |
+| **Export** | **10** | multi-format export, batch folder, preflight, fonts/swatches/tables/masters/XML, **executeScript, script_run** |
 | **Font** | 5 | list, find, change, missing check, glyph insert |
 | **Grep** | 4 | find, replace, findFormat, replaceFormat |
 | **Image** | 5 | place, info, adjust, fit, relink |
@@ -158,7 +178,8 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 | **Note** | 4 | footnotes, endnotes |
 | **Object** | 6 | shapes, groups, image links |
 | **Page** | 7 | add, delete, duplicate, move, getInfo, listAll, applyMaster |
-| **Resources** | 6 | list/update/embed/unembed links |
+| **Preview** | 1 | document — render a page as an image the agent can see |
+| **Resources** | 6 | list/update/embed/unembed links, getLinkInfo |
 | **Section** | 4 | create, list, setNumbering, delete |
 | **Shape** | 6 | rectangle/ellipse/line/polygon create, delete, modify |
 | **Style** | 7 | paragraph/character/object styles CRUD |
@@ -171,6 +192,18 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 | **Undo** | **5** | undo, redo, history, **beginGroup, endGroup** |
 | **Xml** | 6 | tags CRUD, tag/untag items, import/export |
 | **Xref** | 3 | create, list, updateFormat |
+| | **194** | 33 handlers, no duplicates |
+
+`tests/contract/toolInventory.test.ts` pins this number, so the table cannot
+drift from the code without failing CI.
+
+Verified end-to-end against InDesign 2026 (21.3) on the plugin-free macOS path:
+MCP stdio → WebSocket bridge → JXA proxy → InDesign, creating a document,
+adding a text frame, reading it back, and closing.
+
+> **Calling `document_close` from an agent?** `saveOptions` defaults to `ask`,
+> which raises a modal dialog in InDesign and blocks the script until the bridge
+> times out. Pass `saveOptions: "yes"` or `"no"` explicitly.
 
 ### MCP Resources
 
@@ -205,13 +238,6 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 ## ⚡ Quick Start (30 seconds)
 
 ```bash
-npm install -g indesign-nutria-mcp
-indesign-nutria-mcp
-```
-
-Or from source:
-
-```bash
 git clone https://github.com/nutriandrea/adobe-indesign-mcp
 cd adobe-indesign-mcp
 npm install
@@ -219,10 +245,28 @@ npm run build
 node dist/index.js
 ```
 
-### 1️⃣ Load the plugin in InDesign
+> There is no `npm install -g indesign-nutria-mcp` — the package is not
+> published, and installing it that way would fail. Clone and build.
+
+### 1️⃣ Connect InDesign
+
+You need one of the two InDesign bridges. Pick by platform:
+
+**macOS — with the UXP panel** (also emits change events)
 1. Open **UXP Developer Tool**
-2. Load `plugin/` directory
-3. Click **MCP Bridge → Connect**
+2. Load the `plugin/` directory
+3. Open the **MCP Bridge** panel — it connects on its own
+
+**macOS — without the panel**
+```bash
+./start-bridge.sh          # launches InDesign, then the JXA proxy
+```
+
+**Windows — without the panel**
+```bash
+COM_BRIDGE_ENABLED=true node dist/index.js
+```
+See [WINDOWS.md](WINDOWS.md) for the details and caveats.
 
 ### 2️⃣ Connect your AI agent
 
@@ -272,7 +316,26 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ---
 
-## 🆕 What's New in v1.4.0
+## 🆕 What's New in v1.4.2
+
+### For AI agents
+
+| ⚠️ | Read this before you script |
+|---|---|
+| **Prefer the typed tools** | `export_executeScript` and `script_run` have **no cancellation**. A hung script leaves the bridge busy and every later call queues behind it until the host restarts. Loops, font enumeration and multi-mutation probes belong in the typed tools, which validate arguments and time out. See [skills/indesign/indesign-mcp-layout](skills/indesign/indesign-mcp-layout/SKILL.md). |
+
+| Change | What it means for you |
+|--------|----------------------|
+| **The bridge protocol is now canonical** | Responses are `{ type: 'result', id, result }` or `{ type: 'error', id, error }`. Legacy `success`/`response` types are still accepted on input, but an unknown type with a valid `id` is now an explicit error instead of a silently resolved promise. |
+| **Plugin-free macOS setup** | `start-bridge.sh` launches InDesign and the JXA proxy — no UXP panel to load. |
+| **The JXA proxy no longer blocks or corrupts** | Scripts reach `osascript` through a temp file instead of shell-quoted `-e` strings, and execution is asynchronous with a FIFO queue. A script containing a quote, backslash or newline can no longer be mangled, and the MCP server keeps answering while InDesign works. |
+| **Configurable InDesign version** | `INDESIGN_APP` replaces the hardcoded "Adobe InDesign 2024" process name. |
+| **The panel connects itself** | The MCP Bridge panel connects on open, so there is no Connect click to miss. |
+| **InDesign 2026 anchoring** | Creating an anchored object no longer depends on `move()`, which 2026 rejects for insertion-point targets. |
+| **The shipped config starts everywhere** | It declared the wrong MCP transport and would have aborted startup on macOS and Linux had it enabled the Windows COM bridge. Both are now covered by a test. |
+
+<details>
+<summary>v1.4.0</summary>
 
 | Change | What it means for you |
 |--------|----------------------|
@@ -280,6 +343,8 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 | **Batch PDF: `export_batchFolder`** | Export every `.indd` in a folder to PDF in one call, with per-file results. |
 | **Windows COM bridge** | Run with zero plugins via `COM_BRIDGE_ENABLED=true`. See [WINDOWS.md](WINDOWS.md). |
 | **Hardened file paths** | Every file-touching tool validates paths up front — traversal attempts (`..`) and system directories are rejected before InDesign ever sees them (now 11 guarded call sites). |
+
+</details>
 
 <details>
 <summary>v1.3.0</summary>
@@ -323,6 +388,16 @@ HTTP_BRIDGE_ENABLED=false   # optional REST fallback bridge
 HTTP_BRIDGE_PORT=3000
 SERVER_TRANSPORT=stdio      # stdio | websocket
 LOG_LEVEL=info              # debug | info | warn | error
+COM_BRIDGE_ENABLED=false    # Windows only: drive InDesign over COM, no plugin
+```
+
+The plugin-free macOS proxy takes its own variables:
+
+```bash
+INDESIGN_APP="Adobe InDesign 2026"     # matches your installed version
+BRIDGE_WS_URL=ws://127.0.0.1:8120
+BRIDGE_TIMEOUT_MS=120000               # a long export is not a hang
+BRIDGE_RECONNECT_DELAY_MS=3000
 ```
 
 Precedence: **environment variables > JSON config file > defaults**. Invalid values are ignored, never fatal.
@@ -340,17 +415,21 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ```
 ├── src/
 │   ├── server/          # MCP server (STDIO transport)
-│   ├── bridge/          # WebSocket bridge + ScriptExecutor
-│   ├── handlers/        # 31 handler modules (191 tools)
+│   ├── bridge/          # WebSocket bridge, ScriptExecutor, protocol, COM executor
+│   ├── handlers/        # 33 handler modules (194 tools)
 │   ├── schemas/         # Zod parameter schemas
 │   ├── core/            # Session tracking
 │   ├── types/           # TypeScript definitions
 │   └── utils/           # Config, logger, security, JSON polyfill
 ├── plugin/              # UXP panel (index.html, index.js, manifest.json)
-├── tests/               # 747+ tests (vitest)
+├── bridge-proxy.mjs     # Plugin-free macOS proxy (JXA/osascript)
+├── jxa-driver.js        # Runs one ExtendScript inside InDesign
+├── start-bridge.sh      # Launches InDesign + the proxy
+├── skills/              # Agent-facing skills shipped with the server
+├── tests/               # 966 tests (vitest)
 ├── .opencode/skills/    # 10 AI agent skills
+├── docs/                # Documentation and fork audits
 ├── media/               # Social preview, hero images
-├── docs/                # Documentation
 ├── dist/                # Compiled output
 └── opencode.json        # MCP configuration
 ```
@@ -363,14 +442,14 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 |-------------|---------|
 | **Adobe InDesign** | 2022+ (2024/2025/2026 recommended) |
 | **Node.js** | 18+ |
-| **OS** | macOS (Windows via CEP planned) |
+| **OS** | macOS or Windows (Linux can run the MCP server, but no InDesign automation path exists there) |
 
 ---
 
 ## 🧪 Development
 
 ```bash
-npm test           # Run 747 tests
+npm test           # Run 966 tests
 npm run test:watch # Watch mode
 npm run build      # TypeScript compile
 npm run lint       # ESLint
@@ -380,7 +459,6 @@ npm run lint       # ESLint
 
 ## 🗺️ Roadmap
 
-- [ ] **Windows CEP support** — bridge via CEP panel
 - [ ] **InDesign Server** — headless server support for CI/CD pipelines
 - [ ] **Live preview** — stream InDesign canvas to agent
 - [ ] **Template marketplace** — share and discover InDesign templates
@@ -413,15 +491,48 @@ Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## 🙏 Acknowledgements
 
-- **[@graydini](https://github.com/graydini)** — pioneered the Windows COM bridge
-  architecture (persistent `cscript` + `DoScript` over WebSocket, `NEVER_INTERACT`,
-  singleton bridge) in [PR #1](https://github.com/nutriandrea/adobe-indesign-mcp/pull/1),
-  and uncovered the InDesign 2026 API incompatibilities (renamed/read-only
-  `ColorModel` & `AnchorPoint` enums, `InsertionPoint` targets removed from `move()`)
-  that shaped the official Windows support. Additional fixes landed on `main`:
-  safe `basedOn`/`pointSize` reads in style listing, rich style-creation parameters,
-  `\n` → paragraph-break normalization in text content, and an `eval`-free JSON
-  polyfill that survives the ExtendScript sanitizer.
+This server is a merge of what four people found in the field. Each of these
+contributions fixed something that was genuinely broken, not a cosmetic
+preference.
+
+- **[@graydini](https://github.com/graydini)** — built the Windows COM bridge
+  that this project runs on today: a persistent `cscript` process holding one
+  live COM connection, `NEVER_INTERACT` so export dialogs can never block, and
+  the path-containment hardening in `validateFilePath`.
+  See [PR #1](https://github.com/nutriandrea/adobe-indesign-mcp/pull/1) and the
+  [PR #21](https://github.com/nutriandrea/adobe-indesign-mcp/pull/21) merge.
+  Also reported the InDesign 2026 API incompatibilities that shaped official
+  Windows support: renamed and read-only `ColorModel` and `AnchorPoint` enums,
+  and `move()` no longer accepting `InsertionPoint` targets. Earlier fixes from
+  the same line of work landed on `main` as safe `basedOn`/`pointSize` reads in
+  style listing, rich style-creation parameters, `\n` → paragraph-break
+  normalization in text content, and an `eval`-free JSON polyfill that survives
+  the ExtendScript sanitizer.
+  Their branch also carried COM-specific operational knowledge — that a hung
+  script wedges the Windows bridge with no way out, that `fontFamily`,
+  `italic` and `weight` throw under COM, and that InDesign must be visibly
+  running — now documented in
+  [WINDOWS.md](WINDOWS.md) and the layout skill. A file-by-file audit of what
+  was still unmerged is in
+  [docs/forks/graydini-windows-com-bridge-audit.md](docs/forks/graydini-windows-com-bridge-audit.md).
+
+- **[@advaitakelkar](https://github.com/advaitakelkar)** — diagnosed why the
+  macOS proxy returned junk, in
+  [PR #22](https://github.com/nutriandrea/adobe-indesign-mcp/pull/22). Three
+  real bugs in one report: `osascript` sends script *results* on **stderr**, so
+  every successful call was read as a failure; the script was passed through
+  shell `-e` quoting, which mangles any quote, backslash or newline; and the
+  app name was hardcoded to "Adobe InDesign 2024", so every other version
+  failed. The same work also moved the connection handshake out of
+  `app.doScript`, where it was being parsed as ExtendScript. Adopted and
+  extended — see [What's New](#-whats-new-in-v142).
+
+- **[@ijeetu](https://github.com/ijeetu)** — two fixes, both easy to miss and
+  both real. The MCP Bridge panel now connects on open instead of waiting for
+  a Connect click, so the panel no longer looks dead when the server is
+  already running. Earlier, they traced a parse failure in the JSON polyfill to
+  `sanitizeCode()` rewriting `eval(` into a comment and orphaning the
+  parentheses — the shipped `wrapExtendScript` already reflects that fix.
 
 ---
 
@@ -434,6 +545,6 @@ MIT © Andrea Cacioppo
 <p align="center">
   <b>Made with ❤️ for designers who code and AI agents who design.</b><br>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp">GitHub</a> ·
-  <a href="https://www.npmjs.com/package/indesign-nutria-mcp">npm</a> ·
-  <a href="https://github.com/nutriandrea/adobe-indesign-mcp/issues">Issues</a>
+  <a href="https://github.com/nutriandrea/adobe-indesign-mcp/issues">Issues</a> ·
+  <a href="https://github.com/nutriandrea/adobe-indesign-mcp/blob/main/CONTRIBUTING.md">Contributing</a>
 </p>

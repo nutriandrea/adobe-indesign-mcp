@@ -75,9 +75,9 @@ to get right — the ExtendScript object model is inconsistent about whether
 `paragraphs[0].characters[0]` gives you the same object as
 `stories[0].paragraphs[0].characters[0]`.
 
-### v1.2.0 — Current
+### v1.2.0 — at the time of this write
 
-183 tools, 31 handlers. See README.
+183 tools, 31 handlers. See README for current counts.
 
 ## The Hardest Bugs
 
