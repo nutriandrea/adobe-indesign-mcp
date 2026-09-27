@@ -128,6 +128,11 @@ export class AnchoredObjectHandler implements IHandler {
       var doc = app.activeDocument;
       var ip = doc.stories[${params.storyIndex}].insertionPoints[${params.insertionIndex}];
       var newItem;
+      // InDesign 2026 removed the ability to re-anchor via move(): passing an
+      // insertion point as the 'to' argument now throws "Invalid value for
+      // parameter 'to'... Expected Array of 2 Units, Spread, Page or Layer".
+      // Adding the item to the insertion point's own collection anchors it
+      // inline, which is the supported way to place an anchored object.
       if ("${contentType}" === "textFrame") {
         newItem = ip.textFrames.add({geometricBounds: [0, 0, ${params.height}, ${params.width}]});
       } else if ("${contentType}" === "rectangle") {

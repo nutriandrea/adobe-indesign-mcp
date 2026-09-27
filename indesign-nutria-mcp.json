@@ -12,7 +12,7 @@
     "token": ""
   },
   "server": {
-    "transport": "websocket",
+    "transport": "stdio",
     "name": "indesign-nutria-mcp",
     "version": "1.0.0"
   },
