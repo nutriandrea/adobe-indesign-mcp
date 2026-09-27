@@ -96,6 +96,13 @@
   let serverUrlInput = null;
   let connectBtn = null;
 
+  // Must match the bridge server default (BridgeServer.ts) and the JXA proxy.
+  const DEFAULT_SERVER_URL = 'ws://localhost:8120';
+
+  function currentServerUrl() {
+    return (serverUrlInput && serverUrlInput.value.trim()) || DEFAULT_SERVER_URL;
+  }
+
   // ── Logging ──
   function logEntry(cssClass, message) {
     if (!logEl) return;
@@ -300,10 +307,14 @@
       if (ws && ws.readyState === WebSocket.OPEN) {
         disconnect();
       } else {
-        const url = serverUrlInput.value.trim() || 'ws://localhost:8120';
-        connect(url);
+        connect(currentServerUrl());
       }
     });
+
+    // Auto-connect as soon as the panel is opened, so the panel is usable
+    // without a manual click. If the bridge server is not up yet, the retry
+    // logic in connect() keeps trying.
+    connect(currentServerUrl());
   }
 
   // UXP panels fire DOMContentLoaded on initial load
