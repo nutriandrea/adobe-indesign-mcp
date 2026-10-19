@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generic validation error, and the generator now refuses one before it is
   written: the package description is 92 bytes, and the byte count is checked
   because UTF-8 never reports fewer bytes than characters.
+- **`npm publish --dry-run` failed inside its own `prepublishOnly` check.** npm
+  hands its configuration down to lifecycle scripts, so the dry run set
+  `npm_config_dry_run` for the whole chain: `npm pack` returned a manifest, a
+  shasum and a size for a tarball it never wrote, and the `npm install` after it
+  died with ENOENT on the prefix directory it never created (exit 254). The one
+  rehearsal meant to confirm the package is sound reported it as broken.
+  `verify-pack.mjs` now drops the inherited flag before it spawns anything, and
+  `tests/unit/verifyPackScript.test.ts` keeps that drop ahead of the first npm
+  child. A real publish is unaffected — it never sets that flag.
 
 ## [1.6.0] - 2026-10-19
 

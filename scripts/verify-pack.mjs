@@ -87,6 +87,22 @@ function run(label, fn) {
   return value;
 }
 
+/**
+ * npm hands its own configuration down to lifecycle scripts, so a
+ * `prepublishOnly` run started by `npm publish --dry-run` puts
+ * `npm_config_dry_run` in the environment of everything below it. Under that
+ * flag `npm pack` reports a tarball it never writes and `npm install` fails
+ * with ENOENT on the prefix directory it never creates (exit 254) — a dry run
+ * reported as a broken package, at the one moment a maintainer is checking
+ * whether the package is sound. This script exists to inspect real files, so
+ * it drops the inherited flag for its children.
+ *
+ * The flag arrives through the environment, and a `--dry-run=false` on each
+ * command does override it, but dropping it once here is what keeps both npm
+ * calls below (and anything they spawn) out of dry-run mode.
+ */
+delete process.env.npm_config_dry_run;
+
 const packed = run('npm pack', () =>
   JSON.parse(execFileSync('npm', ['pack', '--json'], { cwd: root, encoding: 'utf8' }))[0],
 );

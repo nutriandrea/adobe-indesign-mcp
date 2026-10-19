@@ -22,7 +22,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
   <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat" alt="npm"></a>
   <a href="#"><img src="https://img.shields.io/badge/tools-197-7c3aed?style=flat" alt="tools"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-1121-22c55e?style=flat" alt="tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-1123-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
@@ -541,7 +541,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ├── start-bridge.sh      # Launches InDesign + the proxy
 ├── skills/              # Agent-facing skills shipped with the server
 ├── marketplace/         # Store listings that package a skill for third-party channels
-├── tests/               # 1121 tests (vitest)
+├── tests/               # 1123 tests (vitest)
 ├── .opencode/skills/    # 10 AI agent skills
 ├── docs/                # Documentation and fork audits
 ├── media/               # Social preview, hero images
@@ -564,7 +564,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ## 🧪 Development
 
 ```bash
-npm test            # Run 1121 tests
+npm test            # Run 1123 tests
 npm run test:watch  # Watch mode
 npm run build       # TypeScript compile
 npm run lint        # ESLint
