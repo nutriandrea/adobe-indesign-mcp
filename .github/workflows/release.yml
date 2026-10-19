@@ -4,9 +4,11 @@ name: Release
 # npm with provenance, and attach the release notes from the CHANGELOG plus the
 # .mcpb bundle.
 #
-# The registry half lives in publish-mcp-registry.yml and is chained off this
-# workflow's GitHub Release (`on: release: published`), so the registry never
-# advertises a version that npm does not have yet.
+# The registry half lives in publish-mcp-registry.yml and is called below as a
+# job, so it cannot start before this workflow has published to npm. It is not
+# chained off `release: published`: release.yml creates the release with the
+# default GITHUB_TOKEN, and GitHub does not start new workflow runs for events
+# raised by that token — that chain never fired.
 on:
   push:
     tags: ["v*"]
@@ -79,3 +81,12 @@ jobs:
             --notes-file /tmp/notes.md \
             --verify-tag \
             dist-mcpb/*.mcpb
+
+  # Runs only after the release job has published to npm and created the GitHub
+  # Release — exactly the ordering the registry's ownership check needs. Calling
+  # it as a job rather than relying on `release: published` is what makes this
+  # ordering real: events raised by the default GITHUB_TOKEN do not start new
+  # workflow runs.
+  registry:
+    needs: release
+    uses: ./.github/workflows/publish-mcp-registry.yml

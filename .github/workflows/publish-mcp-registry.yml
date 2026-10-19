@@ -2,14 +2,22 @@ name: Publish to MCP Registry
 
 # Publishes server.json to the official MCP Registry.
 #
-# Chained off the GitHub Release rather than off the tag, because the registry
-# verifies ownership by fetching the npm package and matching its `mcpName`
-# against the `name` in server.json. If this ran in parallel with the npm
-# publish it would race the package's availability and fail verification.
+# It has to run *after* the npm publish, never in parallel with it: the
+# registry verifies ownership by fetching the npm package and matching its
+# `mcpName` against the `name` in server.json, so racing the package's
+# availability fails verification.
+#
+# The ordering comes from release.yml calling this workflow as a job
+# (`workflow_call`). It cannot come from `on: release` for CI-created releases:
+# release.yml creates the release with the default GITHUB_TOKEN, and GitHub
+# does not start new workflow runs for events raised by that token, so that
+# trigger fires only for releases made by hand in the UI — which is what it is
+# kept for.
 on:
   release:
     types: [published]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
