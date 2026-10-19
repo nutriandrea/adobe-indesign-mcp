@@ -33,10 +33,10 @@ brochure, automation
 - **Adobe InDesign, installed and licensed, on the machine that runs your
   agent.** InDesign has no headless mode: the skill drives the application you
   have open. Without it, and without a license, nothing here works.
-- **The `indesign-nutria-mcp` server, installed separately.** It is not on npm
-  yet. Today the install is a `git clone` and a build; afterward it is one line,
-  `npx -y indesign-nutria-mcp` (package name `indesign-nutria-mcp`). The skill
-  can neither host nor install a server for you.
+- **The `indesign-nutria-mcp` server, installed separately.** It is on npm: the
+  config is one line, `npx -y indesign-nutria-mcp` (package name
+  `indesign-nutria-mcp`). The skill can neither host nor install a server for
+  you.
 
 Node.js 18 or newer. macOS and Windows are both supported.
 
@@ -66,10 +66,9 @@ Code.
 
 - **Adobe InDesign, installed and licensed.** The skill drives the application
   on your machine; InDesign has no headless mode.
-- **The indesign-nutria-mcp server, installed separately.** It is not on npm
-  yet — setup is a `git clone` and a build today, and one line afterward. The
-  skill can neither host nor install a server for you; `SETUP.md` walks through
-  it.
+- **The indesign-nutria-mcp server, installed separately.** It is on npm: the
+  config is one line, `npx -y indesign-nutria-mcp`. The skill can neither host
+  nor install a server for you; `SETUP.md` walks through it.
 - **Node.js 18 or newer.** macOS and Windows are both supported.
 
 ## Notes for the reviewer
@@ -81,6 +80,7 @@ Code.
 - Setup starts a local bridge (a WebSocket listener on `127.0.0.1:8120` on
   macOS, or an in-process COM bridge on Windows). There is no remote service
   and no data leaves the machine.
-- The `SETUP.md` and the configs are honest about the current state: the npm
-  package is not published yet, so the configs point at a local build rather
-  than a command that would fail.
+- The `SETUP.md` and the configs name the real install: the npm package
+  `indesign-nutria-mcp`, run with `npx -y indesign-nutria-mcp`. It is
+  published, and the macOS bridge step points at this same GitHub repository,
+  so there is no third-party code involved anywhere.

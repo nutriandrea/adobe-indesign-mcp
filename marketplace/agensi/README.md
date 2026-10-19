@@ -69,9 +69,9 @@ Beyond the format, three things are guarded by this repo:
 - **The tool count is real.** `npm run verify:tool-counts` reads the markdown
   here along with the README, `llms.txt` and the package description, so the
   number quoted to a buyer cannot disagree with the registry.
-- **The install step is real.** The configs point at a local build, not at an
-  npm package that does not exist yet. `SETUP.md` says so plainly and names the
-  one-line install as the thing that follows the publish.
+- **The install step is real.** The configs name the published npm package and
+  the `npx` command that starts it, so a buyer's first run does what `SETUP.md`
+  says it does.
 
 ## The paid tier
 

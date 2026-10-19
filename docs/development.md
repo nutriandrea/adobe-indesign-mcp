@@ -21,7 +21,9 @@ npm run build          # tsc -> dist/
 npm run dev            # tsx watch src/index.ts (no build step)
 ```
 
-The server is not published to npm; run it from the clone.
+The server is published to npm — `npx -y indesign-nutria-mcp` is what user
+configs run. This document is about running it from a clone, which is what you
+want for development.
 
 ## npm scripts
 

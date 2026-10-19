@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
+  <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat" alt="npm"></a>
   <a href="#"><img src="https://img.shields.io/badge/tools-197-7c3aed?style=flat" alt="tools"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-1121-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -27,9 +28,11 @@
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
 </p>
 
-> **Not published to npm.** This server drives a local desktop application, so
-> install it from the repository — see [Quick Start](#-quick-start-30-seconds).
-> Until a release exists, the npm badge would only send you to a 404.
+> **Published to npm** as
+> [`indesign-nutria-mcp`](https://www.npmjs.com/package/indesign-nutria-mcp).
+> Your agent starts it with `npx -y indesign-nutria-mcp` — see
+> [Quick Start](#-quick-start-30-seconds). InDesign still runs on your machine:
+> the server reaches it over a local bridge, and nothing leaves the box.
 
 ---
 
@@ -244,66 +247,71 @@ adding a text frame, reading it back, and closing.
 
 ## ⚡ Quick Start (30 seconds)
 
-```bash
-git clone https://github.com/nutriandrea/adobe-indesign-mcp
-cd adobe-indesign-mcp
-npm install
-npm run build
-node dist/index.js
-```
-
-> There is no `npm install -g indesign-nutria-mcp` — the package is not
-> published, and installing it that way would fail. Clone and build.
+Two halves: the **server** your agent runs — one line from npm, no clone and no
+build — and the **bridge** that reaches InDesign on this machine.
 
 ### 1️⃣ Connect InDesign
 
-You need one of the two InDesign bridges. Pick by platform:
+The server listens on `127.0.0.1:8120`; something still has to drive InDesign.
+Pick by platform:
 
 **macOS — with the UXP panel** (also emits change events)
 1. Open **UXP Developer Tool**
-2. Load the `plugin/` directory
+2. Load the `plugin/` directory — it ships in this repository, so clone it once:
+   `git clone https://github.com/nutriandrea/adobe-indesign-mcp` (no build step)
 3. Open the **MCP Bridge** panel — it connects on its own
 
 **macOS — without the panel**
 ```bash
-./start-bridge.sh          # launches InDesign, then the JXA proxy
+git clone https://github.com/nutriandrea/adobe-indesign-mcp
+cd adobe-indesign-mcp
+npm install            # gives the proxy its `ws` dependency; nothing to build
+./start-bridge.sh      # launches InDesign, then the JXA proxy
 ```
 
-**Windows — without the panel**
-```bash
-COM_BRIDGE_ENABLED=true node dist/index.js
-```
+**Windows — no bridge process.** The COM bridge drives InDesign in-process, so
+Windows needs neither the clone nor a second process; it is enabled by the env
+var in the config you use in step 2 (see
+[`examples/claude-desktop.windows.json`](examples/claude-desktop.windows.json)).
 See [WINDOWS.md](WINDOWS.md) for the details and caveats.
 
 ### 2️⃣ Connect your AI agent
 
-**OpenCode:**
-```json
-{
-  "mcpServers": {
-    "indesign": {
-      "command": "node",
-      "args": ["dist/index.js", "opencode-indesign.json"]
-    }
-  }
-}
-```
+Both hosts start the same published package — nothing to clone, nothing to
+build.
 
 **Claude Desktop:**
 ```json
 {
   "mcpServers": {
     "indesign": {
-      "command": "node",
-      "args": ["/path/to/indesign-nutria-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "indesign-nutria-mcp"]
     }
   }
 }
 ```
 
+**OpenCode** (project `opencode.json`, or the same block in
+`~/.config/opencode/opencode.json`):
+```json
+{
+  "mcp": {
+    "servers": {
+      "indesign": {
+        "type": "local",
+        "command": ["npx", "-y", "indesign-nutria-mcp"]
+      }
+    }
+  }
+}
+```
+On OpenCode the servers live under `mcp.servers`, not `mcpServers`, and the
+command is an array — that is [the documented V2 shape](https://opencode.ai/v2/docs/mcp-servers).
+
 Ready-made files for Claude Desktop, Cursor and Claude Code — including the
-Windows COM variant — are in [`examples/`](examples/README.md). Each one is a
-copy-paste config with the one path to fill in.
+Windows COM variant — are in [`examples/`](examples/README.md). Each one is
+copy-paste.
 
 ### 3️⃣ Start creating
 

@@ -147,19 +147,26 @@ describe('examples/', () => {
     expect(servers).toBeTypeOf('object');
     const indesign = servers.indesign;
     expect(indesign, `${file} has no "indesign" server`).toBeTruthy();
-    expect(indesign.command).toBe('node');
+    expect(indesign.command).toBe('npx');
     expect(Array.isArray(indesign.args)).toBe(true);
     expect(indesign.args.length).toBeGreaterThan(0);
     expect(indesign.args.every((a: unknown) => typeof a === 'string')).toBe(true);
   });
 
-  it('does not hand a user a command that fails while the package is unpublished', () => {
-    // The README states plainly that the package is not on npm. An example that
-    // used `npx indesign-nutria-mcp` would contradict it and break on the first
-    // run. `examples/README.md` documents the `npx` form for after the publish;
-    // flipping these examples is part of that publish, not before it.
+  it('names a package that resolves, keyed to the name that is published', () => {
+    // These files pointed at `node /ABSOLUTE/PATH/TO/.../dist/index.js` while the
+    // package was unpublished, and `npx` was forbidden then precisely because it
+    // did not resolve. The package is on npm now, so `npx` is what a user should
+    // run — the failure this test exists to prevent is an example naming a
+    // package that is not the one `package.json` publishes. Keying the
+    // assertion to `pkg.name` makes a rename fail here rather than on a user's
+    // first run.
     for (const file of files) {
-      expect(readText(`../../examples/${file}`)).not.toContain('npx');
+      const text = readText(`../../examples/${file}`);
+      const indesign = readJson(`../../examples/${file}`).mcpServers.indesign;
+      expect(indesign.command, `${file} command`).toBe('npx');
+      expect(indesign.args, `${file} args`).toEqual(['-y', pkg.name]);
+      expect(text, `${file} carries no local path`).not.toContain('ABSOLUTE/PATH');
     }
   });
 });

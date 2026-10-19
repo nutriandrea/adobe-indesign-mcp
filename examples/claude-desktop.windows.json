@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "indesign": {
-      "command": "node",
-      "args": ["C:\\ABSOLUTE\\PATH\\TO\\adobe-indesign-mcp\\dist\\index.js"],
+      "command": "npx",
+      "args": ["-y", "indesign-nutria-mcp"],
       "env": {
         "COM_BRIDGE_ENABLED": "true"
       }

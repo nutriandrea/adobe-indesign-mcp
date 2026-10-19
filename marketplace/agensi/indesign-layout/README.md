@@ -17,8 +17,9 @@ indexes, data merge, and export to PDF, EPUB or a print preset.
 
 - **Adobe InDesign**, installed and licensed. The skill drives the application
   on your machine — InDesign has no headless mode.
-- **The `indesign-nutria-mcp` server**, installed separately. It is not on npm
-  yet, so setup is a clone and a build today. `SETUP.md` walks through it.
+- **The `indesign-nutria-mcp` server**, installed separately. It is on npm, so
+  the config is one line — `npx -y indesign-nutria-mcp`. `SETUP.md` walks
+  through it.
 - **Node.js 18+**. macOS and Windows are both supported.
 
 ## Using it

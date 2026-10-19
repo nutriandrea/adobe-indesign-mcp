@@ -6,7 +6,7 @@ Claude Code reads MCP servers from a project-scoped `.mcp.json` or from
 ## Option A — one command
 
 ```bash
-claude mcp add indesign -- node /ABSOLUTE/PATH/TO/adobe-indesign-mcp/dist/index.js
+claude mcp add indesign -- npx -y indesign-nutria-mcp
 ```
 
 ## Option B — project `.mcp.json`
@@ -18,8 +18,8 @@ with the same `mcpServers` shape):
 {
   "mcpServers": {
     "indesign": {
-      "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/adobe-indesign-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "indesign-nutria-mcp"]
     }
   }
 }
@@ -31,13 +31,14 @@ On Windows, pass the COM bridge flag too:
 {
   "mcpServers": {
     "indesign": {
-      "command": "node",
-      "args": ["C:\\ABSOLUTE\\PATH\\TO\\adobe-indesign-mcp\\dist\\index.js"],
+      "command": "npx",
+      "args": ["-y", "indesign-nutria-mcp"],
       "env": { "COM_BRIDGE_ENABLED": "true" }
     }
   }
 }
 ```
 
-See [`README.md`](README.md) in this directory for the path to use and for the
-`npx` form that applies once the package is published.
+The package comes from npm, so there is no path to fill in. See
+[`README.md`](README.md) in this directory for the bridge step, which is what
+actually gets InDesign answering.

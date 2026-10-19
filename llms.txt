@@ -5,9 +5,10 @@
 > over a local bridge to the running InDesign application. macOS (JXA + UXP
 > panel) and Windows (COM) are both supported.
 
-Not published to npm yet: install from the repository. See the README Quick
-Start for the clone-and-build path, and `examples/` for ready-made client
-configs.
+Published to npm as `indesign-nutria-mcp`: `npx -y indesign-nutria-mcp` is all a
+client config needs. See the README Quick Start for the bridge that reaches
+InDesign (macOS: repository files once; Windows: in-process), and `examples/`
+for ready-made client configs.
 
 ## Docs
 

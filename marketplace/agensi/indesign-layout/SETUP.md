@@ -1,30 +1,14 @@
 # Setup
 
-Everything here is done once, on the machine that runs InDesign. It is the same
-install the project documents in its own README; this file exists so the skill
-is self-contained.
+Everything here is done once, on the machine that runs InDesign.
 
 **You need:** Adobe InDesign installed (and licensed), and Node.js 18 or newer.
 macOS and Windows are both supported.
 
 ## 1. Install the MCP server
 
-**The package is not on npm yet.** Install it from the repository — the same
-path the project's Quick Start uses:
-
-```bash
-git clone https://github.com/nutriandrea/adobe-indesign-mcp
-cd adobe-indesign-mcp
-npm install && npm run build
-pwd    # note this path: it goes in the config below
-```
-
-`npm run build` produces `dist/index.js`, which is the entry point. The path
-must be absolute.
-
-### Once the package is published
-
-When `indesign-nutria-mcp` is on npm the clone and the build both disappear:
+`indesign-nutria-mcp` is published to npm, so the whole config is two tokens —
+no path to fill in, nothing to clone, nothing to build:
 
 ```json
 {
@@ -34,13 +18,14 @@ When `indesign-nutria-mcp` is on npm the clone and the build both disappear:
 }
 ```
 
-Until then that command fails — which is why the configs shipped alongside this
-file point at a local build.
+The first launch downloads the package; later launches reuse the npm cache.
 
 ## 2. Point your agent at it
 
-Ready-made files are in [`config/`](config/). Copy the one for your client and
-replace `/ABSOLUTE/PATH/TO/adobe-indesign-mcp` with the path from step 1.
+Ready-made files are in [`config/`](config/). Copy the one for your client —
+the command above is already in each of them. On Windows, use
+`config/claude-desktop.windows.json`: it adds
+`"env": { "COM_BRIDGE_ENABLED": "true" }`, which the COM bridge needs.
 
 | Client | File | Goes to |
 | --- | --- | --- |
@@ -56,12 +41,15 @@ Restart the client after editing its config.
 A config alone gets you a server that starts and answers `tools/list`. To make
 **InDesign** answer, one bridge has to be running:
 
-- **macOS, no panel:** `./start-bridge.sh` from the clone.
+- **Windows:** nothing to do beyond the env var from step 2. The COM bridge
+  drives InDesign in-process and needs no separate listener and no repository
+  files.
 - **macOS, UXP panel:** load `plugin/` in the UXP Developer Tool and open the
-  **MCP Bridge** panel.
-- **Windows:** set `COM_BRIDGE_ENABLED=true` in the server config (see the
-  Windows file in `config/`). The COM bridge drives InDesign in-process and
-  needs no separate listener.
+  **MCP Bridge** panel. `plugin/` ships in the
+  [`indesign-nutria-mcp` repository](https://github.com/nutriandrea/adobe-indesign-mcp) —
+  clone it once for this; there is no build step.
+- **macOS, no panel:** `./start-bridge.sh` from that same clone. Run
+  `npm install` first (the proxy needs the `ws` package); still no build step.
 
 Leave InDesign open and visible. Most tools act on an open document, and with
 none open they fail.
