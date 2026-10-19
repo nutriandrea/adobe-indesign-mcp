@@ -17,6 +17,9 @@
  *    `tests/unit/serverVersion.test.ts`.
  *  - `packages[0].identifier` MUST equal the package name, because that is what
  *    the registry tells a client to install.
+ *  - `description` MUST be at most 100 *bytes*, which is a limit of the
+ *    registry, not of npm: the publish is rejected with a bare
+ *    `expected length <= 100` and nothing saying which file was wrong.
  *
  * So it is generated, and `npm run verify:server-json` (in `npm run verify` and
  * in CI) fails the build the moment the checked-in file disagrees with the
@@ -59,6 +62,20 @@ export function render(pkg: PackageJson): string {
     throw new Error(
       'package.json has no `mcpName`. The MCP Registry proves npm ownership by matching ' +
         '`mcpName` against `name` in server.json, so the publish cannot be verified without it.',
+    );
+  }
+
+  // The registry's limit is 100 and it is a *registry* limit, not an npm one.
+  // Count bytes rather than characters: UTF-8 bytes are always >= characters,
+  // so this is the conservative check, and an em dash is one character but
+  // three bytes. The registry's own rejection only says "expected length <= 100"
+  // and names no file, so this is where the message has to come from.
+  const description = pkg.description ?? '';
+  const descriptionBytes = Buffer.byteLength(description, 'utf-8');
+  if (descriptionBytes > 100) {
+    throw new Error(
+      `package.json description is ${descriptionBytes} bytes but the MCP Registry allows at most ` +
+        '100. Shorten `description` in package.json, then run `npm run server:json`.',
     );
   }
 
