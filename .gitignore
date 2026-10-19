@@ -31,3 +31,7 @@ win-bridge-local/
 # committed (they embed node_modules).
 dist-mcpb/
 *.mcpb
+
+# Built Agensi upload archives — a marketplace artifact, rebuilt from source on
+# demand by `npm run build:agensi`, never committed.
+dist-agensi/

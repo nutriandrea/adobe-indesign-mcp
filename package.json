@@ -69,6 +69,7 @@
     "server:json": "tsx scripts/generate-server-json.ts",
     "verify:server-json": "tsx scripts/generate-server-json.ts --check",
     "build:mcpb": "node scripts/build-mcpb.mjs",
+    "build:agensi": "node scripts/build-agensi.mjs",
     "validate:release-tag": "bash scripts/validate-release-tag.sh",
     "verify:pack": "npm run build && node scripts/verify-pack.mjs",
     "verify": "npm run lint && npm run verify:tool-counts && npm run verify:docs && npm run verify:server-json && npm test",

@@ -11,12 +11,27 @@
  * The registry is instantiated through the same shared loader the server and
  * the tests use, so this adds no fourth copy of the handler list.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadHandlers } from '../tests/helpers/loadHandlers.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Every markdown file under `marketplace/`, walked recursively. These are
+ * listing copy shown to buyers, so a stale count is a promise the project
+ * breaks in public.
+ */
+function marketplaceMarkdown(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return marketplaceMarkdown(full);
+    if (entry.isFile() && entry.name.endsWith('.md')) return [full];
+    return [];
+  });
+}
 
 function readmeHandlerTableSum(): number {
   const readme = readFileSync(join(root, 'README.md'), 'utf-8');
@@ -52,6 +67,16 @@ async function main(): Promise<void> {
     // forget. It has no parenthesised sub-totals, so no lookbehind is needed.
     ...eachMatch(llmsTxt, /\b(\d{2,4})\s+tools?\b/gi, 'llms.txt'),
     ...eachMatch(pkg.description ?? '', /\b(\d{2,4})\s+tools?\b/gi, 'package.json description'),
+    // Marketplace listing copy is read by buyers, and `marketplace/README.md`
+    // in this package spells out the count too — checked as prose with no
+    // parenthesised sub-totals, so the negative lookbehind is unnecessary.
+    ...marketplaceMarkdown(join(root, 'marketplace')).flatMap((file) =>
+      eachMatch(
+        readFileSync(file, 'utf-8'),
+        /\b(\d{2,4})\s+tools?\b/gi,
+        file.slice(root.length),
+      ),
+    ),
     ['README handler table', readmeHandlerTableSum()],
   ];
 

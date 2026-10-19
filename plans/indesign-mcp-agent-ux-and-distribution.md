@@ -513,6 +513,35 @@ for npm.
 
 Any change to a step records what changed, why, what it blocks, and the date.
 
+- **2026-10-19 (off-plan)** — **A second distribution channel: a free companion
+  skill for a marketplace, and the skill drift that finding it exposed.** The plan
+  covers the MCP Registry, the MCPB bundle and npm. A marketplace for agent skills
+  is a channel it never names, so **no step below changes status** — this entry
+  records the addition and the bug it surfaced.
+  **The bug is the reason it is worth recording.** Reading the shipped
+  `skills/indesign/indesign-mcp-layout/SKILL.md` to write the listing showed it
+  named a `mcp_indesign_*` prefix the registry does not use, and pointed
+  connectivity checks at `health_check` and `list_ai_skills` — neither registered
+  by any handler, in any release. This is the same class of defect the plan
+  already names for `instructions` and for recipes ("`suggested_next_tool` naming
+  a tool that does not exist"), with one difference: those are contract-tested,
+  and the skills were not tested at all. `tests/unit/skillGuidance.test.ts` now
+  holds every `SKILL.md` under `skills/` and `marketplace/` to the live registry,
+  and to Agensi's name-equals-folder rule.
+  **The package:** `marketplace/agensi/` holds the skill folder, the listing copy
+  and `npm run build:agensi`, which stages the folder, zips it, then re-opens its
+  own archive to assert the marketplace's checklist — one top-level folder,
+  `SKILL.md` at its root, text files only, no OS cruft. `config/` is copied from
+  `examples/` at build time, so a buyer's configs are the bytes
+  `distributionManifests` already validates. Not in `files`, like `mcpb/`.
+  **Verification:** `npm run verify` (lint; tool counts now checked in **10**
+  advertised places, the two marketplace markdown files moved the count from 8;
+  docs; `verify:server-json`; **1121 tests**, +11). Both new guards were seen
+  failing on the buggy input and passing on the fixed one.
+  **Deliberately not here:** the paid tier's content. The plan is the wrong place
+  for material sold on the strength of not being in a public repo — same reason
+  it is not in the repository either.
+
 - **2026-10-19** — **S6 and S9 landed: the distribution half exists and is gated;
   what is left is a credential, not code.** Open questions 2 and 3 (no npm
   credentials, no Windows machine) still block S5's publish and S10's Windows

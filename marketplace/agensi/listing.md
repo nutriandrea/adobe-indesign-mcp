@@ -1,0 +1,74 @@
+# Listing copy
+
+Ready to paste into the Agensi "sell" form. Fields are labelled to match the
+form's own sections; adjust freely — this is the draft, not a contract.
+
+## Title
+
+Adobe InDesign Layout
+
+## Short description (one line)
+
+Drive Adobe InDesign from your agent: build and edit layouts, flow manuscripts,
+create tables and a table of contents, and export press-ready PDFs through the
+indesign-nutria-mcp server.
+
+## Category
+
+Branding & Design
+
+## Price
+
+Free
+
+## Tags
+
+indesign, layout, desktop publishing, print, pdf, adobe, typography, catalog,
+brochure, automation
+
+## Description
+
+**What it does.** This skill teaches an agent *when* and *how* to drive
+indesign-nutria-mcp — an MCP server for Adobe InDesign — so layout work happens
+in the real application instead of being described in prose. Creating and
+editing documents, placing and flowing text and images, building styled tables,
+applying paragraph and character styles, working with master pages, generating
+a table of contents or an index, mail-merging a data source, and exporting to
+PDF, EPUB or a named print preset.
+
+The server exposes 197 tools across 34 handlers. The skill is the layer
+that makes them usable: which tool to reach for, the order to call them in,
+and the failure modes that otherwise waste a session — raw scripts that cannot
+be cancelled, a stale page index, a front-document assumption when several
+documents are open, a modal save dialog that wedges InDesign.
+
+**Why it is free.** The server is MIT and open source. This companion skill is
+the same guidance, packaged for agents — it exists to make the server
+discoverable and to make the install trivial.
+
+**What you get.** A `SKILL.md` your agent loads, a `SETUP.md` with the install
+and bridge steps, and copy-paste configs for Claude Desktop, Cursor and Claude
+Code.
+
+## Requirements (please show these on the listing)
+
+- **Adobe InDesign, installed and licensed.** The skill drives the application
+  on your machine; InDesign has no headless mode.
+- **The indesign-nutria-mcp server, installed separately.** It is not on npm
+  yet — setup is a `git clone` and a build today, and one line afterward. The
+  skill can neither host nor install a server for you; `SETUP.md` walks through
+  it.
+- **Node.js 18 or newer.** macOS and Windows are both supported.
+
+## Notes for the reviewer
+
+- The skill runs no scripts of its own. It instructs the agent to call tools
+  the server exposes; the server is installed separately by the user.
+- Everything the skill does happens in the user's own InDesign, on their
+  machine, over a local bridge.
+- Setup starts a local bridge (a WebSocket listener on `127.0.0.1:8120` on
+  macOS, or an in-process COM bridge on Windows). There is no remote service
+  and no data leaves the machine.
+- The `SETUP.md` and the configs are honest about the current state: the npm
+  package is not published yet, so the configs point at a local build rather
+  than a command that would fail.

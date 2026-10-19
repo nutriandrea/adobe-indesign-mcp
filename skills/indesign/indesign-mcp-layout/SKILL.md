@@ -1,12 +1,13 @@
 ---
 name: indesign-mcp-layout
-description: "Use when driving Adobe InDesign through this MCP server. Prefer the typed mcp_indesign_* tools; read before using export_executeScript or script_run."
+description: "Use when driving Adobe InDesign through this MCP server. Prefer the typed tools; read before using export_executeScript or script_run."
 ---
 
 # InDesign Layout Through MCP
 
-This server exposes the typed `mcp_indesign_*` tools. They validate their
-arguments, wrap ExtendScript internally and apply timeouts and error handling.
+This server exposes typed tools with bare snake_case names — `document_create`,
+`text_addFrame`, `table_setCell` and 194 more. They validate their arguments,
+wrap ExtendScript internally and apply timeouts and error handling.
 **Use the typed tools.** Raw script execution is a last resort.
 
 ## Why typed tools instead of raw ExtendScript
@@ -32,7 +33,7 @@ multi-mutation probes, or anything that touches many DOM objects.
 | Apply styles to text | `text_applyParagraphStyle` / `text_applyFont` |
 | Read text content | `text_getContent` / `text_getFormatting` |
 | Export | `export_document` |
-| List or check connectivity | `health_check` / `list_ai_skills` |
+| Check the connection | `document_listOpen` — or read the `mcp://bridge/status` resource |
 
 ## Before any layout task
 
@@ -45,6 +46,19 @@ multi-mutation probes, or anything that touches many DOM objects.
    `document_id` a tool acts on the front document, so with more than one
    document open the wrong front tab is a common failure.
 3. Prefer `text_getContent` / `grep_find` to read state before writing it.
+
+## Resources
+
+Besides the tools, the server exposes read-only resources for cheap checks.
+They never touch InDesign and cost no round-trip, so they are the right way to
+answer "is this thing alive?":
+
+- `mcp://bridge/status` — is the bridge reachable, and how deep is the queue
+- `mcp://session/status` — this session's state
+- `mcp://document/active` — the front document's cached state
+- `mcp://tools/inventory` — the full tool list, for discovery
+
+Use `document_listOpen` when you want the answer through a tool call.
 
 ## Reading state
 

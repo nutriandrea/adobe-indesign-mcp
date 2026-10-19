@@ -32,6 +32,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   asserts the examples never hand a user an `npx` command that would fail today.
   The release workflow fails loudly on a missing `NPM_TOKEN` rather than skipping
   the publish, so a tag cannot look released and be uninstallable.
+- **A marketplace listing that packages a skill for a third-party channel.**
+  `marketplace/agensi/` holds the free companion skill prepared for Agensi, a
+  marketplace for agent skills: the skill folder itself (`SKILL.md`, `SETUP.md`,
+  a buyer-facing `README.md`), the listing copy to paste into the form, and
+  `scripts/build-agensi.mjs` (`npm run build:agensi`), which stages the folder,
+  zips it and then re-opens its own archive to assert the shape Agensi's creator
+  checklist requires — one top-level folder named after the skill, `SKILL.md` at
+  its root, text files only, no OS cruft. The `config/` directory inside the zip
+  is **copied from `examples/` at build time** rather than committed, so the
+  bytes a buyer receives are the ones `distributionManifests` already validates.
+  Like `mcpb/`, nothing here ships to npm: it is a store artifact, not a library,
+  and it is deliberately **not** in the package's `files`.
+
+### Fixed
+- **The shipped layout skill told agents to call two tools that never existed.**
+  `skills/indesign/indesign-mcp-layout/SKILL.md` advertised a `mcp_indesign_*`
+  prefix the registry does not use, and pointed connectivity checks at
+  `health_check` and `list_ai_skills` — neither of which is registered by any
+  handler, in any release. A skill is instruction, so naming a tool that does not
+  resolve sends the model into a second failure on top of the one it was
+  recovering from; the correct cheap probe was `document_listOpen`, and the
+  read-only resources (`mcp://bridge/status` and friends) were not mentioned at
+  all. The skill now names only real tools and documents the resources.
+
+  The root cause was that `SKILL.md` was the one piece of agent-facing text with
+  no guard: `instructions.test.ts` already holds the initialize-time contract to
+  the registry, and `verify:docs` regenerates the catalog, but nothing read the
+  skills. `tests/unit/skillGuidance.test.ts` now walks every `SKILL.md` under
+  `skills/` and `marketplace/` and fails on a tool name the registry does not
+  know — and on a skill whose frontmatter `name` disagrees with its folder,
+  which is a marketplace's most common reason to reject or silently drop a
+  skill. It is regression-proven: restored to its buggy state, the guard reports
+  both dead names.
+
+  `verify:tool-counts` also now reads the markdown under `marketplace/`, so the
+  count quoted to a buyer is checked alongside the README, `llms.txt` and the
+  package description — 10 advertised places instead of 8.
 
 ## [1.5.0] - 2026-10-18
 
