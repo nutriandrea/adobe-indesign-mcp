@@ -327,7 +327,31 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ---
 
-## 🆕 What's New in v1.5.0
+## 🆕 What's New in v1.6.0
+
+### Fixed
+
+| ⚠️ | Read this before you script |
+|---|---|
+| **The layout skill named tools that do not exist** | `skills/indesign/indesign-mcp-layout/SKILL.md` advertised an `mcp_indesign_*` prefix the registry never used, and pointed connectivity checks at `health_check` and `list_ai_skills` — neither is registered by any handler. A skill is instruction, so naming a tool that does not resolve sends a model into a second failure on top of the one it was recovering from. |
+
+| Change | What it means for you |
+|--------|----------------------|
+| **The skill names real tools now** | It points at the bare tool names the registry actually exposes, and documents the read-only resources (`mcp://bridge/status` and friends), which never touch InDesign and cost no round-trip. |
+| **Skills are guarded like the instructions are** | `tests/unit/skillGuidance.test.ts` walks every `SKILL.md` under `skills/` and `marketplace/` and fails on a tool name the registry does not know — and on a skill whose frontmatter `name` disagrees with its folder. Regression-proven against the bug above. |
+| **Marketplace counts are checked too** | `verify:tool-counts` now reads the markdown under `marketplace/`, so the number quoted to a buyer is checked alongside the README, `llms.txt` and the package description. |
+
+### Added
+
+| Change | What it means for you |
+|--------|----------------------|
+| **Client configs** | `examples/` holds copy-paste configs for Claude Desktop (macOS, and the Windows COM variant), Cursor and Claude Code, plus `examples/README.md`. |
+| **Registry and bundle metadata** | `server.json` — generated from `package.json` and gated by `verify:server-json` — and `mcpb/manifest.json`, so the MCP Registry and an MCP Bundle can be published from the same release. |
+| **Release automation** | `release.yml` takes a tag through `verify` and `verify:pack`, publishes to npm with provenance, builds the `.mcpb` and attaches it to the GitHub Release with the CHANGELOG notes. `publish-mcp-registry.yml` chains off the release, so the registry never advertises a version npm does not have. `validate-release-tag.sh` refuses a tag that disagrees with `package.json` or has no CHANGELOG section. |
+| **A packaged companion skill** | `marketplace/agensi/` prepares the skill for a third-party marketplace, with `npm run build:agensi` asserting the archive shape the reviewer requires — one top-level folder, `SKILL.md` at its root, text files only. Like `mcpb/`, it does not ship to npm. |
+
+<details>
+<summary>v1.5.0</summary>
 
 ### For AI agents
 
@@ -347,6 +371,8 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 | Change | What it means for you |
 |--------|----------------------|
 | **The "pin the document" advice is now executable** | The connect-time contract used to tell the host to *ask which document was meant*. It now names `document_id` and how to pass it, and the shipped `indesign-mcp-layout` skill points at it too. |
+
+</details>
 
 <details>
 <summary>v1.4.3</summary>

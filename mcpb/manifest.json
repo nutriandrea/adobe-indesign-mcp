@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "indesign-nutria-mcp",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "MCP server for Adobe InDesign — 197 tools, full DOM control, AI-native automation",
   "author": {
     "name": "Andrea Cacioppo",

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0] - 2026-10-19
 
 ### Added
 - **Client configs, registry metadata and release automation — the distribution
@@ -26,11 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release event. `scripts/validate-release-tag.sh` fails a tag that disagrees
   with `package.json` or that has no CHANGELOG section.
 
-  **These are wired but not yet used.** The package is still not published to
-  npm — no npm credentials exist — so the example configs point at a local build,
-  `examples/README.md` documents the `npx` form for afterwards, and a test
-  asserts the examples never hand a user an `npx` command that would fail today.
-  The release workflow fails loudly on a missing `NPM_TOKEN` rather than skipping
+  **The example configs point at a local build.** `examples/README.md`
+  documents the one-line `npx` form to use afterwards, and a test asserts the
+  examples never hand a user a command that would not work as written. The
+  release workflow fails loudly on a missing `NPM_TOKEN` rather than skipping
   the publish, so a tag cannot look released and be uninstallable.
 - **A marketplace listing that packages a skill for a third-party channel.**
   `marketplace/agensi/` holds the free companion skill prepared for Agensi, a
@@ -411,7 +410,7 @@ Merges the fixes contributed through the forks, plus regression tests for each.
 - Custom timeout/maxResults limits for large documents
 - MCP resources: `mcp://tools/inventory` for agent auto-discovery
 
-[Unreleased]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.5.0...HEAD
+[1.6.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.3...v1.5.0
 [1.4.3]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.1...v1.4.2
