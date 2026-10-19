@@ -28,6 +28,18 @@ brochure, automation
 
 ## Description
 
+**Before you install — this skill needs two things, and it can supply neither.**
+
+- **Adobe InDesign, installed and licensed, on the machine that runs your
+  agent.** InDesign has no headless mode: the skill drives the application you
+  have open. Without it, and without a license, nothing here works.
+- **The `indesign-nutria-mcp` server, installed separately.** It is not on npm
+  yet. Today the install is a `git clone` and a build; afterward it is one line,
+  `npx -y indesign-nutria-mcp` (package name `indesign-nutria-mcp`). The skill
+  can neither host nor install a server for you.
+
+Node.js 18 or newer. macOS and Windows are both supported.
+
 **What it does.** This skill teaches an agent *when* and *how* to drive
 indesign-nutria-mcp — an MCP server for Adobe InDesign — so layout work happens
 in the real application instead of being described in prose. Creating and
