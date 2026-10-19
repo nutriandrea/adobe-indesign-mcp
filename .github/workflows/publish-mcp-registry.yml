@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to advertise (e.g. v1.6.0); required when dispatching from a branch"
+        description: "Release tag to advertise (e.g. v1.6.1); required when dispatching from a branch"
         required: false
         type: string
   workflow_call:

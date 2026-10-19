@@ -12,7 +12,7 @@ import { z } from 'zod';
  * files that have since stopped stating it). Bumping this with the release is a
  * step, so `tests/unit/serverVersion.test.ts` fails the moment it is forgotten.
  */
-export const SERVER_VERSION = '1.6.0';
+export const SERVER_VERSION = '1.6.1';
 
 const configSchema = z.object({
   bridge: z

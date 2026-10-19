@@ -3,7 +3,7 @@
   "name": "io.github.nutriandrea/indesign-nutria-mcp",
   "title": "Adobe InDesign",
   "description": "The most comprehensive MCP server for Adobe InDesign: 197 tools, AI-native, full DOM control",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "repository": {
     "url": "https://github.com/nutriandrea/adobe-indesign-mcp",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "identifier": "indesign-nutria-mcp",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "transport": {
         "type": "stdio"
       }

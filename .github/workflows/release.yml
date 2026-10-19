@@ -4,6 +4,13 @@ name: Release
 # npm with provenance, and attach the release notes from the CHANGELOG plus the
 # .mcpb bundle.
 #
+# npm publishing uses OIDC trusted publishing: GitHub mints a short-lived token
+# for this workflow and npm accepts it because the package's trusted publisher
+# names `nutriandrea` / `adobe-indesign-mcp` / `release.yml`. There is no
+# NPM_TOKEN and no long-lived credential to rotate or leak. The trusted publisher
+# records this workflow's filename, so renaming this file breaks the release
+# until npmjs.com is updated to match.
+#
 # The registry half lives in publish-mcp-registry.yml and is called below as a
 # job, so it cannot start before this workflow has published to npm. It is not
 # chained off `release: published`: release.yml creates the release with the
@@ -19,7 +26,7 @@ concurrency:
 
 permissions:
   contents: write # create the GitHub Release and attach assets
-  id-token: write # npm provenance
+  id-token: write # OIDC: npm trusted publishing, and provenance with it
 
 jobs:
   release:
@@ -36,6 +43,12 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      # Trusted publishing needs npm CLI >= 11.5.1, and Node 22 still ships npm
+      # 10. Pinned for the same reason the actions are: a new upstream release
+      # must not change what this workflow runs without a commit here changing.
+      - name: Use an npm that can do OIDC
+        run: npm install -g npm@11.17.0
+
       - run: npm ci
 
       # Tag and package.json must agree, and the version needs CHANGELOG notes.
@@ -50,21 +63,18 @@ jobs:
       - name: Verify the packed artifact
         run: npm run verify:pack
 
-      # A loud, actionable failure beats a silent skip: without the token
-      # `npm publish` would die on ENEEDAUTH halfway through the release.
-      - name: Require NPM_TOKEN
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN is not set. Add a repository secret named NPM_TOKEN (an npm automation token) before tagging a release."
-            exit 1
-          fi
-
+      # No NODE_AUTH_TOKEN anywhere: the OIDC exchange is the only credential, so
+      # a trusted publisher that is missing or misconfigured fails loudly here
+      # instead of publishing with a token that happened to still be lying
+      # around. `setup-node` writes an .npmrc that references NODE_AUTH_TOKEN;
+      # with the variable unset the npm CLI detects the OIDC environment first
+      # and exchanges it for a short-lived publish token.
+      #
+      # `--provenance` is redundant under OIDC — npm generates and publishes the
+      # attestation for a public package in a public repository on its own — and
+      # is kept so the intent does not depend on that default staying put.
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Build the .mcpb bundle
         run: npm run build:mcpb

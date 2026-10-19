@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-10-19
+
+### Changed
+- **Every install path is now the published one-liner.** The package has been on
+  npm since 1.6.0, so the clone-and-build install every document described was
+  the wrong first step. `examples/` (Claude Desktop, the Windows COM variant,
+  Cursor, Claude Code), the README quick start, `llms.txt`,
+  `docs/development.md` and the free Agensi listing all use
+  `npx -y indesign-nutria-mcp`. The clone survives as the development path, and
+  as what the **macOS bridge** needs: `plugin/` for the UXP panel, and
+  `start-bridge.sh` with `bridge-proxy.mjs` otherwise. Those steps no longer
+  ask for `npm run build` — the proxy imports only Node builtins and `ws` and
+  never touches `dist/`. Windows needs neither, since the COM bridge drives
+  InDesign in-process.
+- **`opencode.json` was in the OpenCode V1 shape**, so no V2 install read it:
+  server names go under `mcp.servers`, the type is `local`, the command is an
+  array, and a server is turned off with `disabled` — there is no `enabled`
+  field. `tests/unit/distributionManifests.test.ts` no longer asserts the old
+  state (`command === 'node'`, and examples must not contain `npx`); it asserts
+  `npx -y <package.json name>`, so a package rename fails in CI instead of in a
+  user's first run.
+- **Publishing to npm uses OIDC trusted publishing.** `release.yml` no longer
+  reads `NPM_TOKEN`; GitHub mints a short-lived token for the workflow and npm
+  accepts it because the package's trusted publisher names
+  `nutriandrea/adobe-indesign-mcp` and `release.yml`. The workflow installs a
+  pinned npm 11, because trusted publishing needs npm >= 11.5.1 and Node 22
+  still ships npm 10. No long-lived credential is left to rotate or leak.
+
+### Fixed
+- **The MCP Registry publish now runs as a job of the release.** It was chained
+  off `release: published`, and a release created by `release.yml` uses the
+  default `GITHUB_TOKEN` — GitHub does not start new workflow runs for events
+  raised by that token, so the chain never fired and 1.6.0 reached npm and
+  GitHub without reaching the registry. `release.yml` calls
+  `publish-mcp-registry.yml` as a job with `needs: release`; the `release` event
+  trigger stays for releases made by hand.
+- **`server.json` no longer exceeds the registry's 100-character description
+  limit.** One over-long description rejects an otherwise valid publish with a
+  generic validation error, and the generator now refuses one before it is
+  written: the package description is 92 bytes, and the byte count is checked
+  because UTF-8 never reports fewer bytes than characters.
+
 ## [1.6.0] - 2026-10-19
 
 ### Added

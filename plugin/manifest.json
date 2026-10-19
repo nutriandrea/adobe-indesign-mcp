@@ -1,7 +1,7 @@
 {
   "id": "com.nutria.indesign-mcp",
   "name": "InDesign MCP Bridge",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "main": "index.html",
   "manifestVersion": 5,
   "entrypoints": [
