@@ -17,7 +17,16 @@
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+} from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,6 +48,36 @@ function has(bin) {
 function fail(message) {
   console.error(`build:agensi: ${message}`);
   process.exit(1);
+}
+
+/** Every file under `dir`, relative to it. */
+function walk(dir, base = dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return walk(full, base);
+    return [relative(base, full)];
+  });
+}
+
+/**
+ * Pin every staged file's mtime, recursively, so the same content produces the
+ * same bytes.
+ *
+ * `zip` stores mtimes, and the staging step re-copies `examples/` on every
+ * build, so without this the printed sha256 changed on every run — a number
+ * that looked like an artefact identity but identified nothing. Two builds a
+ * few seconds apart could even collide, because the zip format stores DOS times
+ * with a two-second granularity.
+ *
+ * 1980-01-01 is the earliest date the zip format can represent.
+ */
+function freeze(dir) {
+  const stamp = new Date(Date.UTC(1980, 0, 1, 0, 0, 0));
+  for (const rel of walk(dir)) utimesSync(join(dir, rel), stamp, stamp);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) freeze(join(dir, entry.name));
+  }
+  utimesSync(dir, stamp, stamp);
 }
 
 if (!has('zip') || !has('unzip')) {
@@ -85,6 +124,7 @@ for (const junk of ['.DS_Store', 'Thumbs.db']) {
 }
 
 // 4. The archive: a single top-level folder, so `zip` runs from its parent.
+freeze(STAGE);
 const out = join(OUT_DIR, `${SKILL_DIR_NAME}-${version}.zip`);
 execFileSync('zip', ['-r', '-q', '-X', out, SKILL_DIR_NAME], { cwd: OUT_DIR });
 
