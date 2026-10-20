@@ -38,7 +38,9 @@ brochure, automation
   `indesign-nutria-mcp`). The skill can neither host nor install a server for
   you.
 
-Node.js 18 or newer. macOS and Windows are both supported.
+Node.js 18 or newer. The skill is tested on macOS. Windows drives InDesign
+through an in-process COM bridge; it is documented in `SETUP.md` but has not
+been verified end-to-end, so treat it as unproven rather than supported.
 
 **What it does.** This skill teaches an agent *when* and *how* to drive
 indesign-nutria-mcp — an MCP server for Adobe InDesign — so layout work happens
@@ -64,12 +66,31 @@ Code.
 
 ## Requirements (please show these on the listing)
 
+The listing form has a **structured "Requires" field**, separate from this copy.
+Whatever it shows is what a buyer reads first, and the first upload got it wrong:
+it listed *Node.js, macOS, indesign-nutria-mcp and Git* while omitting
+**Adobe InDesign** itself — the one requirement that cannot be worked around.
+Select:
+
+- **Adobe InDesign** — the application the skill drives, installed and licensed
+  on the machine that runs the agent.
+- **Node.js** — 18 or newer.
+- **macOS** — the platform this package is tested on.
+- **the `indesign-nutria-mcp` server** (the form shows it as *Indesign Nutria MCP*).
+- **Git** — only if the reader uses the clone-based macOS bridge step; the `npx`
+  config does not need it. Optional, and fine to leave out.
+
+Do **not** select Windows yet: the COM bridge has not been verified end-to-end on
+a Windows machine, and the copy above is worded to match.
+
+The requirements themselves, in prose:
+
 - **Adobe InDesign, installed and licensed.** The skill drives the application
   on your machine; InDesign has no headless mode.
 - **The indesign-nutria-mcp server, installed separately.** It is on npm: the
   config is one line, `npx -y indesign-nutria-mcp`. The skill can neither host
   nor install a server for you; `SETUP.md` walks through it.
-- **Node.js 18 or newer.** macOS and Windows are both supported.
+- **Node.js 18 or newer.** Tested on macOS; see the Windows note above.
 
 ## Notes for the reviewer
 

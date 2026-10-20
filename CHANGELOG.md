@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   job now runs `scripts/wait-for-npm-version.mjs` before publishing
   `server.json`, which polls the version endpoint until it serves the version
   being released and fails loudly if it never does.
+- **The Agensi listing claimed Windows support it has never been given.** The
+  free listing is live with "macOS and Windows are both supported" in the copy
+  and in `SETUP.md`, but the platform is only ever exercised on macOS: the
+  Windows path drives InDesign over an in-process COM bridge that has no
+  end-to-end verification, which is why the Windows half of the live smoke
+  suite is still open. A buyer on Windows would have read a promise nobody
+  tested. The wording now says what is true — macOS is the tested platform,
+  Windows is documented in `SETUP.md` but unproven — and `listing.md` spells out
+  the structured "Requires" field, whose first upload omitted **Adobe InDesign**,
+  the one requirement that cannot be worked around, while listing Git.
 
 ## [1.6.1] - 2026-10-19
 
@@ -476,6 +486,7 @@ Merges the fixes contributed through the forks, plus regression tests for each.
 - MCP resources: `mcp://tools/inventory` for agent auto-discovery
 
 [Unreleased]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.3...v1.5.0
 [1.4.3]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.2...v1.4.3

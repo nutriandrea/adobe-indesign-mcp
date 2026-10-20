@@ -3,7 +3,10 @@
 Everything here is done once, on the machine that runs InDesign.
 
 **You need:** Adobe InDesign installed (and licensed), and Node.js 18 or newer.
-macOS and Windows are both supported.
+
+macOS is the tested platform. Windows drives InDesign through an in-process COM
+bridge — the steps are below, but they have not been verified end-to-end on a
+Windows machine, so treat Windows as unproven rather than supported.
 
 ## 1. Install the MCP server
 
@@ -43,7 +46,7 @@ A config alone gets you a server that starts and answers `tools/list`. To make
 
 - **Windows:** nothing to do beyond the env var from step 2. The COM bridge
   drives InDesign in-process and needs no separate listener and no repository
-  files.
+  files. These steps have not been verified end-to-end on a Windows machine.
 - **macOS, UXP panel:** load `plugin/` in the UXP Developer Tool and open the
   **MCP Bridge** panel. `plugin/` ships in the
   [`indesign-nutria-mcp` repository](https://github.com/nutriandrea/adobe-indesign-mcp) —

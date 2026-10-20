@@ -20,7 +20,9 @@ indexes, data merge, and export to PDF, EPUB or a print preset.
 - **The `indesign-nutria-mcp` server**, installed separately. It is on npm, so
   the config is one line — `npx -y indesign-nutria-mcp`. `SETUP.md` walks
   through it.
-- **Node.js 18+**. macOS and Windows are both supported.
+- **Node.js 18+**. Tested on macOS. Windows drives InDesign through an in-process
+  COM bridge: `SETUP.md` documents the steps, but they have not been verified
+  end-to-end on a Windows machine.
 
 ## Using it
 
