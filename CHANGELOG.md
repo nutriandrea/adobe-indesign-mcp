@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **The MCP Registry job no longer races npm's own propagation.** `npm publish`
+  exiting 0 means the version was accepted, not that npm already serves it:
+  `/<package>/<version>` can answer 404 for minutes afterwards while the
+  packument and CDN catch up. The registry proves ownership by fetching the
+  package from npm, so on 1.6.1 it got a 404 for a version that was published
+  correctly, and `mcp-publisher publish` rejected the server — a red release
+  that only a manual re-run four minutes later cleared. `release.yml`'s registry
+  job now runs `scripts/wait-for-npm-version.mjs` before publishing
+  `server.json`, which polls the version endpoint until it serves the version
+  being released and fails loudly if it never does.
+
 ## [1.6.1] - 2026-10-19
 
 ### Changed
@@ -461,6 +475,7 @@ Merges the fixes contributed through the forks, plus regression tests for each.
 - Custom timeout/maxResults limits for large documents
 - MCP resources: `mcp://tools/inventory` for agent auto-discovery
 
+[Unreleased]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.6.1...HEAD
 [1.6.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.3...v1.5.0
 [1.4.3]: https://github.com/nutriandrea/adobe-indesign-mcp/compare/v1.4.2...v1.4.3

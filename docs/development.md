@@ -311,11 +311,21 @@ npm run validate:release-tag -- v1.5.0
 to npm with provenance, builds the `.mcpb` and attaches it to the GitHub
 Release, and creates the release from the CHANGELOG section.
 `.github/workflows/publish-mcp-registry.yml` publishes `server.json` to the MCP
-Registry, chained off the release rather than the tag so it cannot race npm's
-package availability.
+Registry, called as a job of the release rather than chained off it so it cannot
+start before npm has the package.
 
-**What is still blocked on credentials, not code:** the npm publish needs a
-repository secret named `NPM_TOKEN`. Without it the release fails *loudly* on a
-"Require NPM_TOKEN" step before anything is published — a silent skip would ship
-a tag that looks released and is not installable. The registry workflow needs no
-extra secret; it authenticates with GitHub OIDC.
+Running after the publish is not enough on its own: the registry verifies
+ownership by fetching the package from npm, and npm serves a newly published
+version a few minutes after `npm publish` returns. The registry job therefore
+waits with `scripts/wait-for-npm-version.mjs`, which polls
+`/<package>/<version>` until it answers and fails after 15 minutes otherwise.
+Re-running that job by hand is the correct repair when npm is merely slow.
+
+**What is still blocked on credentials, not code:** nothing. The npm publish
+uses OIDC trusted publishing — no `NPM_TOKEN` and no repository secret. The
+package's trusted publisher names `nutriandrea`, `adobe-indesign-mcp` and
+`release.yml`, and `release.yml` grants `id-token: write`; npm mints a
+short-lived token for the run. A mismatch between that configuration and the
+workflow fails the publish, and npm reports it as a 404 on the publish `PUT`
+rather than as an authentication error. The registry workflow needs no secret
+either; it authenticates with GitHub OIDC.

@@ -67,5 +67,16 @@ jobs:
       - name: Authenticate to the MCP Registry
         run: ./mcp-publisher login github-oidc
 
+      # Running after the npm publish is necessary but not sufficient: a
+      # successful `npm publish` means the version was accepted, not that npm
+      # already serves it. The registry proves ownership by fetching the
+      # package from npm, so it sees whatever npm's read path currently says.
+      # v1.6.1 failed exactly here — the publish exited 0 and this job got a
+      # 404 for the version seconds later, then passed on a manual re-run once
+      # npm caught up. Waiting is cheaper than a red release that teaches
+      # everyone to re-run without reading.
+      - name: Wait for npm to serve the version
+        run: node scripts/wait-for-npm-version.mjs
+
       - name: Publish server.json
         run: ./mcp-publisher publish
