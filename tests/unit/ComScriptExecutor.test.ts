@@ -140,4 +140,27 @@ describe('ComScriptExecutor', () => {
     child.stdout.emit('data', Buffer.from('"ok"\n'));
     await p;
   });
+
+  // cscript's stdout is ANSI, so run_jsx_persistent.vbs emits every character
+  // above U+007F as \uXXXX. The two tests below pin how each line kind is
+  // handled on this side of the pipe.
+  it('decodes the \\uXXXX escapes the VBS emits on ERROR lines', async () => {
+    const p = executor.execute('boom;');
+    child.stdout.emit('data', Buffer.from('ERROR: Nesne gerekli: Ba\\u015Fl\\u0131ks\\u0131z-1\n'));
+    await expect(p).rejects.toMatchObject({
+      code: 'BRIDGE_ERROR',
+      message: 'Nesne gerekli: Başlıksız-1',
+    });
+  });
+
+  it('passes escaped JSON results through untouched so JSON.parse restores the text', async () => {
+    const p = executor.execute('app.activeDocument.name;');
+    const line = '{"name":"Ba\\u015Fl\\u0131ks\\u0131z-1","emoji":"\\uD83D\\uDE00"}';
+    child.stdout.emit('data', Buffer.from(`${line}\n`));
+    const res = await p;
+    // The line is already valid JSON; rewriting it here could corrupt a payload
+    // that legitimately contains an escaped backslash followed by "uXXXX".
+    expect(res.result).toBe(line);
+    expect(JSON.parse(res.result as string)).toEqual({ name: 'Başlıksız-1', emoji: '😀' });
+  });
 });

@@ -25,14 +25,25 @@ Notes:
   = NEVER_INTERACT`) so modal dialogs can never hang a tool call.
 - Requests execute one at a time (FIFO) through a single persistent script
   host — startup cost is paid once, not per tool call.
+- Text is UTF-8 end to end. The script host reads the generated `.jsx` as
+  UTF-8 and escapes every character above U+007F in its output as `\uXXXX`,
+  because `cscript` reads and writes in the system ANSI code page. The escape
+  is valid inside the JSON every tool returns and is decoded on error lines;
+  only a raw `script_run` script that returns a bare non-JSON string will show
+  the escapes literally.
 
 ## Verification status — stated plainly
 
 The macOS path is exercised end to end against a running InDesign by
-`npm run smoke:macos` and `npm run smoke:recipes`. **The COM path is not.** This
-repo has no Windows host, so everything COM-specific is covered by unit tests
-that assert the platform branch — which is not the same as a live
-`cscript` + InDesign run. Treat Option B as *shipped but unexercised by us*:
+`npm run smoke:macos` and `npm run smoke:recipes`. **The COM path has no such
+suite.** This repo has no Windows host, so everything COM-specific is covered by
+unit tests that assert the platform branch and pin the contract of the shipped
+`.vbs` — which is not the same as a live `cscript` + InDesign run. It has been
+run live once outside this repo, by a contributor on Windows 11 with InDesign
+2026 (2026-10-23): tool calls return, non-ASCII text (Turkish) round-trips into
+the document and back intact, and a PDF exported through the bridge shows the
+right glyphs. That run is also what found the encoding bug below. Treat Option
+B as *shipped, exercised once elsewhere, not covered by a smoke suite*:
 
 - The macOS-only invariants still hold for it (`ComScriptExecutor` shares
   `wrapExtendScript` and the same sanitizer), the bridge refuses to start on a
@@ -42,10 +53,17 @@ that assert the platform branch — which is not the same as a live
   running) come from [@graydini](https://github.com/graydini)'s branch. They are
   recorded because they are real observations from someone who ran it, not
   because they were reproduced here.
+- Until the UTF-8 fix, the script host read the `.jsx` with
+  `FileSystemObject.OpenTextFile`, which decodes in the system ANSI code page,
+  while `ComScriptExecutor` writes it as UTF-8. Every non-ASCII character
+  reached InDesign as mojibake (`Yayınları` became `YayÄ±nlarÄ±` in the
+  document and in the exported PDF), and because `cscript`'s ANSI stdout
+  reversed the damage on the way back, the tool result looked correct. The
+  same probe script reports a string length of 24 through the old script and
+  16 — the true length — through the fixed one.
 
-If you run Option B on a real Windows host, the two things worth reporting are
-whether a tool call actually returns, and whether a wedged script can be
-recovered without restarting InDesign.
+If you run Option B on a real Windows host, the thing still worth reporting is
+whether a wedged script can be recovered without restarting InDesign.
 
 Credits: COM approach pioneered by [@graydini](https://github.com/graydini)
 in PR #1; this implementation keeps the macOS default path untouched by being

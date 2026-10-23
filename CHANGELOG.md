@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The Windows COM bridge mangled every non-ASCII character.**
+  `run_jsx_persistent.vbs` read the `.jsx` that `ComScriptExecutor` writes as
+  UTF-8 through `FileSystemObject.OpenTextFile`, which decodes in the system
+  ANSI code page, so `Yayınları` reached InDesign as `YayÄ±nlarÄ±` — in the
+  story, on the page, in the exported PDF. The tool result hid it: `cscript`'s
+  stdout is ANSI too, so the same mistake ran backwards on the way out and Node
+  saw the original text. Real Unicode coming from InDesign (a document named
+  `Başlıksız-1`) arrived as `Ba�l�ks�z` for the same reason. The script now
+  reads the file through `ADODB.Stream` as UTF-8 and writes every character
+  above U+007F as a `\uXXXX` escape, which is valid as-is inside the JSON
+  results and is decoded by `ComScriptExecutor` on `ERROR:` lines; the `.vbs`
+  is kept pure ASCII because `cscript` reads it in ANSI as well. Verified live
+  on Windows 11 with InDesign 2026: the same probe script returned a string
+  length of 24 through the old bridge and 16 — the true length — through the
+  new one, and the exported PDF shows the right glyphs. A contract test pins the
+  UTF-8 read, the escaping and the ASCII-only source, and `WINDOWS.md` now says
+  the COM path has been run live once rather than never.
 - **The MCP Registry job no longer races npm's own propagation.** `npm publish`
   exiting 0 means the version was accepted, not that npm already serves it:
   `/<package>/<version>` can answer 404 for minutes afterwards while the

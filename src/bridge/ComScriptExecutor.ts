@@ -131,7 +131,7 @@ export class ComScriptExecutor extends ScriptExecutor {
     cleanupTemp(pending.tempFile);
 
     if (line.startsWith('ERROR:')) {
-      pending.reject(new InDesignError(line.slice(6).trim(), 'BRIDGE_ERROR'));
+      pending.reject(new InDesignError(decodeUnicodeEscapes(line.slice(6).trim()), 'BRIDGE_ERROR'));
       return;
     }
     pending.resolve({ id: pending.id, type: 'result', result: line });
@@ -150,6 +150,17 @@ export class ComScriptExecutor extends ScriptExecutor {
     }
     this.queue = [];
   }
+}
+
+/**
+ * run_jsx_persistent.vbs writes every character above U+007F as a \uXXXX escape,
+ * because cscript's stdout is ANSI and would mangle it. Result lines are the
+ * JSON produced by wrapExtendScript, where the escape is already valid and
+ * JSON.parse restores the character; "ERROR:" lines are plain text, so they are
+ * decoded here. Surrogate pairs arrive as two escapes and recombine naturally.
+ */
+function decodeUnicodeEscapes(text: string): string {
+  return text.replace(/\\u([0-9a-fA-F]{4})/g, (_match, hex: string) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 function cleanupTemp(path: string): void {
