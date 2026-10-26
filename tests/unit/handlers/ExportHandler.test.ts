@@ -430,7 +430,7 @@ describe('export_package', () => {
     expect(args[10]).toBe('"Press Quality"');
   });
 
-  it('creates the folder when missing and reports what landed in it', async () => {
+  it('creates the folder when missing and inventories subfolders, not just files', async () => {
     const executor = createMockExecutor();
     const handler = new ExportHandler(executor as any);
     const tool = handler.tools.find((t) => t.name === 'export_package')!;
@@ -441,7 +441,29 @@ describe('export_package', () => {
     expect(script).toContain('__folder.exists');
     expect(script).toContain('__folder.create()');
     expect(script).toContain('getFiles()');
-    expect(script).toContain('fileCount');
+    // InDesign writes fonts and links into subfolders; a top-level-only count
+    // reported an empty package as complete.
+    expect(script).toContain('instanceof Folder');
+    expect(script).toContain('subfolders');
+    expect(script).toContain('copiedFiles');
+    // ExtendScript's File.name percent-encodes spaces ("Document%20fonts"), so
+    // the inventory uses displayName and reports names a human recognises.
+    expect(script).toContain('displayName');
+    expect(script).not.toContain('push(__entry.name)');
+  });
+
+  it('treats a false return as refusal, because it throws nothing', async () => {
+    const executor = createMockExecutor();
+    const handler = new ExportHandler(executor as any);
+    const tool = handler.tools.find((t) => t.name === 'export_package')!;
+
+    await tool.handler({ folderPath: '/tmp/pkg' });
+
+    const script = packagedScript(executor);
+    // Verified live: with ignorePreflightErrors false, packageForPrint returns
+    // false and writes nothing rather than raising.
+    expect(script).toContain('__packaged === false');
+    expect(script).toContain('InDesign refused to package');
   });
 
   it('explains a preflight cancellation instead of failing silently', async () => {

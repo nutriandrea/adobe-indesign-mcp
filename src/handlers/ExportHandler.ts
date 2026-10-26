@@ -228,7 +228,12 @@ const exportFormat = formatMap[params.format];
         JSON.stringify({ ok: false, error: "Cannot create package folder: " + __folder.fsName });
       } else {
         try {
-          __doc.packageForPrint(
+          // The DOM declares this as returning Boolean: false means InDesign
+          // refused and wrote nothing, which is what happens when preflight
+          // reports errors and ignorePreflightErrors is false. It does not
+          // throw, so ignoring the value would report an empty folder as
+          // success.
+          var __packaged = __doc.packageForPrint(
             __folder,
             ${params.copyingFonts},
             ${params.copyingLinkedGraphics},
@@ -244,24 +249,52 @@ const exportFormat = formatMap[params.format];
             ${versionComments},
             ${params.forceSave}
           );
-          var __packed = __folder.getFiles();
-          var __names = [];
-          for (var i = 0; i < __packed.length; i++) {
-            __names.push(__packed[i].name);
+          if (__packaged === false) {
+            JSON.stringify({
+              ok: false,
+              document: __doc.name,
+              packagedInto: __folder.fsName,
+              error: "InDesign refused to package the document and wrote nothing.",
+              hint: ${params.ignorePreflightErrors}
+                ? "Packaging returned false. The destination may be read-only or the document may be in a state that cannot be packaged."
+                : "This is what a failed preflight looks like: with ignorePreflightErrors false, packageForPrint returns false and copies nothing instead of raising. Run export_preflight to see the errors, fix them, or set ignorePreflightErrors: true to package anyway."
+            });
+          } else {
+            var __subfolders = [];
+            var __topFiles = [];
+            var __sub = __folder.getFiles();
+            for (var i = 0; i < __sub.length; i++) {
+              var __entry = __sub[i];
+              if (__entry instanceof Folder) {
+                var __inner = __entry.getFiles();
+                var __innerNames = [];
+                for (var j = 0; j < __inner.length; j++) {
+                  __innerNames.push(__inner[j].displayName);
+                }
+                __subfolders.push({ name: __entry.displayName, files: __innerNames });
+              } else {
+                __topFiles.push(__entry.displayName);
+              }
+            }
+            var __copiedCount = __topFiles.length;
+            for (var k = 0; k < __subfolders.length; k++) {
+              __copiedCount += __subfolders[k].files.length;
+            }
+            JSON.stringify({
+              ok: true,
+              document: __doc.name,
+              packagedInto: __folder.fsName,
+              copiedFiles: __copiedCount,
+              topLevelFiles: __topFiles,
+              subfolders: __subfolders
+            });
           }
-          JSON.stringify({
-            ok: true,
-            document: __doc.name,
-            packagedInto: __folder.fsName,
-            fileCount: __names.length,
-            files: __names
-          });
         } catch (__e) {
           JSON.stringify({
             ok: false,
             error: String(__e.message || __e),
             hint: ${params.ignorePreflightErrors}
-              ? "Packaging failed. Check the message above; the folder may be read-only or on a full volume."
+              ? "Packaging raised. Check the message above; the folder may be read-only or on a full volume."
               : "Packaging cancels itself when preflight reports errors. Run export_preflight to see them, fix them, or set ignorePreflightErrors: true to package anyway."
           });
         }
