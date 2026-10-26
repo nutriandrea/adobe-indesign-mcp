@@ -77,9 +77,56 @@ export const placeFileSchema = z.object({
 });
 
 export const exportDocumentSchema = z.object({
-  format: z.enum(['pdf', 'epub', 'html', 'jpg', 'png', 'package']),
+  format: z.enum(['pdf', 'epub', 'html', 'jpg', 'png']),
   filePath: z.string().optional(),
   options: z.record(z.unknown()).optional(),
+});
+
+/**
+ * `Document.packageForPrint` takes fourteen positional arguments in a fixed
+ * order (Adobe InDesign DOM reference), several of them booleans whose meaning
+ * is not obvious from the name alone:
+ *
+ *   to, copyingFonts, copyingLinkedGraphics, copyingProfiles, updatingGraphics,
+ *   includingHiddenLayers, ignorePreflightErrors, creatingReport, includeIdml,
+ *   includePdf, pdfStyle, useDocumentHyphenationExceptionsOnly,
+ *   versionComments, forceSave
+ *
+ * Defaults are the conservative ones: collect fonts and links, do not rewrite
+ * the document's links, do not silently swallow a failed preflight, and do not
+ * generate a PDF nobody asked for.
+ */
+export const packageSchema = z.object({
+  folderPath: z
+    .string()
+    .min(1)
+    .describe('Absolute folder to receive the package; created if it does not exist'),
+  copyingFonts: z.boolean().default(true).describe('Copy the fonts the document uses'),
+  copyingLinkedGraphics: z.boolean().default(true).describe('Copy linked graphics'),
+  copyingProfiles: z.boolean().default(false).describe('Copy colour profiles'),
+  updatingGraphics: z
+    .boolean()
+    .default(false)
+    .describe('Repoint the document’s links at the copies in the package folder'),
+  includingHiddenLayers: z
+    .boolean()
+    .default(false)
+    .describe('Collect fonts and links that live on hidden layers'),
+  ignorePreflightErrors: z
+    .boolean()
+    .default(false)
+    .describe('Package even when preflight reports errors; false cancels the packaging'),
+  creatingReport: z.boolean().default(true).describe('Write the package report (fonts, links, inks, print settings)'),
+  includeIdml: z.boolean().default(false).describe('Also generate an IDML copy'),
+  includePdf: z.boolean().default(false).describe('Also generate a PDF'),
+  pdfStyle: z.string().optional().describe('PDF preset name, used only when includePdf is true'),
+  useDocumentHyphenationExceptionsOnly: z
+    .boolean()
+    .default(true)
+    .describe('Keep the document from reflowing on machines with different hyphenation'),
+  versionComments: z.string().optional(),
+  forceSave: z.boolean().default(false),
+  timeoutMs: z.number().int().min(1000).default(300000),
 });
 
 export const executeCodeSchema = z.object({

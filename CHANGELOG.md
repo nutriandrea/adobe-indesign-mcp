@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`export_package` — packaging for print.** Collects the fonts and linked
+  graphics a document depends on, plus the package report, into one folder, via
+  `Document.packageForPrint`. The tool passes all fourteen positional arguments
+  the DOM reference defines, in the documented order, and defaults to the
+  honest ones: fonts and links collected, the document's own links left alone,
+  no PDF nobody asked for, and **preflight errors cancel the packaging** rather
+  than being swallowed. When that happens the result says so and points at
+  `export_preflight`, because a package that silently ships with a broken link
+  is worse than one that refuses.
+
 ### Fixed
 - **The Windows COM bridge mangled every non-ASCII character.**
   `run_jsx_persistent.vbs` read the `.jsx` that `ComScriptExecutor` writes as
@@ -25,6 +36,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new one, and the exported PDF shows the right glyphs. A contract test pins the
   UTF-8 read, the escaping and the ASCII-only source, and `WINDOWS.md` now says
   the COM path has been run live once rather than never.
+
+- **`export_document` advertised a `package` format the DOM cannot provide.**
+  `ExportFormat` has no `PACKAGE` member — the enum is `TAGGED_TEXT`,
+  `PDF_TYPE`, `EPS_TYPE`, `RTF`, `TEXT_TYPE`, `XML`, `JPG`, `INTERACTIVE_PDF`,
+  `FIXED_LAYOUT_EPUB`, `HTMLFXL`, `INDESIGN_SNIPPET`, `INDESIGN_MARKUP`,
+  `INCOPY_MARKUP`, `PNG_FORMAT`, `HTML`, `EPUB` — so the mapping emitted
+  `ExportFormat.PACKAGE` into ExtendScript, evaluated to `undefined`, and every
+  call failed after the tool had already promised it would work. Packaging is a
+  separate operation with its own arguments, so it is now `export_package` and
+  the format is gone from `export_document`.
 - **The MCP Registry job no longer races npm's own propagation.** `npm publish`
   exiting 0 means the version was accepted, not that npm already serves it:
   `/<package>/<version>` can answer 404 for minutes afterwards while the

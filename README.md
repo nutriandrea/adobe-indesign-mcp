@@ -7,7 +7,7 @@
 
 <p align="center">
   <b>Say "Create an A4 document with 5 pages, add a red circle on page 3" — and it happens.</b><br>
-  <i>The most comprehensive MCP server for Adobe InDesign. 197 tools. 34 handlers. Full DOM coverage.</i>
+  <i>The most comprehensive MCP server for Adobe InDesign. 198 tools. 34 handlers. Full DOM coverage.</i>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c3aed?style=flat" alt="license"></a>
   <a href="https://www.npmjs.com/package/indesign-nutria-mcp"><img src="https://img.shields.io/npm/v/indesign-nutria-mcp?style=flat" alt="npm"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tools-197-7c3aed?style=flat" alt="tools"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tools-198-7c3aed?style=flat" alt="tools"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-1131-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
@@ -49,14 +49,14 @@ yours to drive like a puppeteer.
 |---|---|---|---|---|---|
 | **Learn in** | 30 seconds | 3 weeks | 2 months | 1 month | 0 (slow) |
 | **AI-native** | ✅ Any MCP agent | ❌ | ❌ | ❌ | ❌ |
-| **Tool count** | **197** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
+| **Tool count** | **198** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
 | **Error messages** | Human-readable | Opaque crashes | Varies | Better | N/A |
 | **Setup time** | 5 minutes | 10 minutes | 2 hours | 30 minutes | Instant |
 | **Undo support** | ✅ Built-in | ❌ | Varies | ❌ | ✅ |
 | **Search text** | `text_search("pattern")` | Write 50 lines | Maybe | Maybe | Ctrl+F |
 | **Debug mode** | ✅ Stack traces | ❌ | Varies | Limited | N/A |
 | **Remote control** | ✅ Anywhere STDIO works | ❌ InDesign-only | ❌ | ❌ | N/A |
-| **Maintenance** | Zero (we handle 197 tools) | You write+test everything | Fragile | Fragile | N/A |
+| **Maintenance** | Zero (we handle 198 tools) | You write+test everything | Fragile | Fragile | N/A |
 
 ---
 
@@ -138,7 +138,7 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 │  Any AI Agent       │ ◄────────────────► │  indesign-nutria-mcp │ ◄───────────────► │  Adobe InDesign   │
 │  (Claude, OpenCode, │                    │  (Node.js MCP Server) │     port 8120     │  + UXP Plugin     │
 │   Cursor, etc.)     │                    │  34 handlers         │                    │  + ExtendScript    │
-└─────────────────────┘                    │  197 tools           │                    └──────────────────┘
+└─────────────────────┘                    │  198 tools           │                    └──────────────────┘
                                            │  10 AI skills        │
                                            └──────────────────────┘
 ```
@@ -173,7 +173,7 @@ UXP panel. See [WINDOWS.md](WINDOWS.md) for the Windows bridge and
 | **DataMerge** | 5 | selectDataSource, listFields, mergeRecords, export, removeDataSource |
 | **Document** | 9 | create/open/save/close, getInfo, listOpen, **getState**, **getPageStories, getStoryPages** |
 | **Effect** | 4 | drop shadow, feather, transparency, gradient feather |
-| **Export** | **10** | multi-format export, batch folder, preflight, fonts/swatches/tables/masters/XML, **executeScript, script_run** |
+| **Export** | **11** | multi-format export, print packaging, batch folder, preflight, fonts/swatches/tables/masters/XML, **executeScript, script_run** |
 | **Font** | 5 | list, find, change, missing check, glyph insert |
 | **Grep** | 4 | find, replace, findFormat, replaceFormat |
 | **Image** | 5 | place, info, adjust, fit, relink |
@@ -200,7 +200,7 @@ UXP panel. See [WINDOWS.md](WINDOWS.md) for the Windows bridge and
 | **Undo** | **5** | undo, redo, history, **beginGroup, endGroup** |
 | **Xml** | 6 | tags CRUD, tag/untag items, import/export |
 | **Xref** | 3 | create, list, updateFormat |
-| | **197** | 34 handlers, no duplicates |
+| | **198** | 34 handlers, no duplicates |
 
 `tests/contract/toolInventory.test.ts` pins this number, so the table cannot
 drift from the code without failing CI.
@@ -221,7 +221,7 @@ adding a text frame, reading it back, and closing.
 |---|---|
 | `mcp://session/status` | Active document session state |
 | `mcp://bridge/status` | WebSocket bridge health + queue depth |
-| `mcp://tools/inventory` | Full 197-tool catalog for agent self-discovery |
+| `mcp://tools/inventory` | Full 198-tool catalog for agent self-discovery |
 | `mcp://document/active` | Currently active document info |
 
 ---
@@ -369,7 +369,7 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 | Change | What it means for you |
 |--------|----------------------|
-| **`document_id` on every tool** | 197 tools, one extra optional parameter. Omit it and a tool acts on the front document — exactly the previous behaviour, so nothing you already send changes. |
+| **`document_id` on every tool** | 198 tools, one extra optional parameter. Omit it and a tool acts on the front document — exactly the previous behaviour, so nothing you already send changes. |
 | **A target that is not open fails loudly** | `document_id 'Gone.indd' is not open. Open documents: A.indd, B.indd`, classified `document_not_found` and suggesting `document_listOpen`. Previously the script silently edited whichever document happened to be frontmost. |
 | **One shared resolver** | `app.activeDocument` was written inline in **197 places across 32 handlers**; `__resolveDocument()` is now injected with every script and every document-scoped handler resolves through it, so the target holds for the whole call — even if the front tab changes mid-script. |
 | **Safe by construction** | `document_id` reaches InDesign as a JSON string literal and is matched by name, so it is never executable. It is bound per call in `AsyncLocalStorage`, so a call that awaits before dispatching cannot be hijacked by a concurrent one. |
@@ -526,7 +526,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 ├── src/
 │   ├── server/          # MCP server (STDIO transport)
 │   ├── bridge/          # WebSocket bridge, ScriptExecutor, protocol, COM executor
-│   ├── handlers/        # 34 handler modules (197 tools)
+│   ├── handlers/        # 34 handler modules (198 tools)
 │   ├── schemas/         # Zod parameter schemas
 │   ├── core/            # Session tracking
 │   ├── types/           # TypeScript definitions

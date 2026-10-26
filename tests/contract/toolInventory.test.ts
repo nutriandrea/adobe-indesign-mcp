@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadHandlers } from '../helpers/loadHandlers.js';
 
-const EXPECTED_TOOL_COUNT = 197;
+const EXPECTED_TOOL_COUNT = 198;
 
 describe('tool inventory guard', () => {
   it('exposes exactly the advertised number of tools', async () => {

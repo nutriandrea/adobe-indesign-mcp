@@ -4,7 +4,7 @@
 > Regenerate with `npm run docs:tools`. CI (`npm run verify:docs`) fails
 > the build if this file no longer matches the registry.
 
-**197 tools across 34 handlers.** This is the live registry — the same list the server serves over `mcp://tools/inventory`.
+**198 tools across 34 handlers.** This is the live registry — the same list the server serves over `mcp://tools/inventory`.
 
 ## Contents
 
@@ -13,7 +13,7 @@
 - [Text](#text) — 7
 - [Style](#style) — 7
 - [Object](#object) — 6
-- [Export](#export) — 10
+- [Export](#export) — 11
 - [Master](#master) — 6
 - [Table](#table) — 16
 - [Resources](#resources) — 6
@@ -116,12 +116,13 @@ _6 tools_
 
 ## Export
 
-_10 tools_
+_11 tools_
 
 | Tool | Description |
 |------|-------------|
-| `export_document` | Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML, package) |
+| `export_document` | Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML) |
 | `export_batchFolder` | Export every InDesign (.indd) file in a folder to PDF in one run — opens each document invisibly and reports per-file results |
+| `export_package` | Package the active document for print: collect fonts, linked graphics and a report into a folder. Unlike exporting, this gathers the document’s dependencies so it can be handed to a printer |
 | `export_preflight` | Run a preflight check on the active document |
 | `export_getSwatches` | Get all swatches (colors, gradients, tints) from the active document |
 | `export_getFonts` | Get all fonts used in the active document |
