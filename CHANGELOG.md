@@ -16,7 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no PDF nobody asked for, and **preflight errors cancel the packaging** rather
   than being swallowed. When that happens the result says so and points at
   `export_preflight`, because a package that silently ships with a broken link
-  is worse than one that refuses.
+  is worse than one that refuses. `packageForPrint` declares a `Boolean` return
+  and **does not throw** when it refuses: it returns `false` and writes nothing,
+  so the tool checks the value instead of trusting a clean exit. The inventory
+  it reports walks the subfolders, because InDesign puts the fonts and links in
+  `Document fonts/` and `Links/` and a top-level listing finds an empty folder.
+  Verified live against InDesign 2026 on macOS: the default call reports the
+  refusal and leaves the folder empty, and with `ignorePreflightErrors: true`
+  the package contains the font (`MinionPro-Regular 2.otf`), the linked graphic
+  and a copy of the document.
 
 ### Fixed
 - **The Windows COM bridge mangled every non-ASCII character.**
