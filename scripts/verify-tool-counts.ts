@@ -56,6 +56,25 @@ async function main(): Promise<void> {
   const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as {
     description?: string;
   };
+  const developmentDoc = readFileSync(join(root, 'docs/development.md'), 'utf-8');
+
+  /**
+   * Scripts pin the count in a constant or a message, and they are exactly the
+   * kind of place a count rots unnoticed: `build-mcpb` refusing to package the
+   * app because it still expected the previous number was only discovered by
+   * running it. Anything matched here must agree with the registry.
+   */
+  const scriptCounts = readdirSync(join(root, 'scripts'))
+    .filter((name) => name.endsWith('.mjs'))
+    .flatMap((name) => {
+      const text = readFileSync(join(root, 'scripts', name), 'utf-8');
+      return [
+        ...eachMatch(text, /EXPECTED_TOOLS = (\d+)/g, `scripts/${name} EXPECTED_TOOLS`),
+        ...eachMatch(text, /tools !== (\d+)/g, `scripts/${name} tools !==`),
+        ...eachMatch(text, /\bexpected (\d+)\b/g, `scripts/${name} expected`),
+        ...eachMatch(text, /(?<!\()\b(\d{2,4})\s+tools?\b/gi, `scripts/${name} prose`),
+      ];
+    });
 
   const advertised: Array<[string, number]> = [
     // Section headings read "### Text & Typography (27 tools)" — sub-totals by
@@ -78,6 +97,10 @@ async function main(): Promise<void> {
       ),
     ),
     ['README handler table', readmeHandlerTableSum()],
+    // The developer guide tells a maintainer what the checks assert, and was
+    // left quoting the old number when the registry grew.
+    ...eachMatch(developmentDoc, /(?<!\()\b(\d{2,4})\s+tools?\b/gi, 'docs/development.md'),
+    ...scriptCounts,
   ];
 
   const drift = advertised.filter(([, value]) => value !== total);
