@@ -50,7 +50,7 @@ applying paragraph and character styles, working with master pages, generating
 a table of contents or an index, mail-merging a data source, and exporting to
 PDF, EPUB or a named print preset.
 
-The server exposes 197 tools across 34 handlers. The skill is the layer
+The server exposes 198 tools across 34 handlers. The skill is the layer
 that makes them usable: which tool to reach for, the order to call them in,
 and the failure modes that otherwise waste a session — raw scripts that cannot
 be cancelled, a stale page index, a front-document assumption when several

@@ -1,6 +1,6 @@
 # indesign-nutria-mcp
 
-> MCP server for Adobe InDesign. 197 tools across 34 handlers give an LLM host
+> MCP server for Adobe InDesign. 198 tools across 34 handlers give an LLM host
 > full DOM control — documents, pages, text, shapes, styles, tables, export —
 > over a local bridge to the running InDesign application. macOS (JXA + UXP
 > panel) and Windows (COM) are both supported.

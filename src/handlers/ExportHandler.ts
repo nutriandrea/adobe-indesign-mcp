@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { IHandler, ToolDefinition, ToolResult } from '../types/index.js';
-import { exportDocumentSchema, preflightSchema } from '../schemas/index.js';
+import { exportDocumentSchema, preflightSchema, packageSchema } from '../schemas/index.js';
 import { formatResponse } from '../utils/errorHandler.js';
 import { validateFilePath } from '../utils/security.js';
 import { withLogging, withErrorHandling, compose } from '../utils/middleware.js';
@@ -22,7 +22,7 @@ export class ExportHandler implements IHandler {
     return [
       {
         name: 'export_document',
-        description: 'Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML, package)',
+        description: 'Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML)',
         inputSchema: exportDocumentSchema.shape,
         handler: compose(withLogging('export_document'), withErrorHandling())(this.export.bind(this)),
       },
@@ -37,6 +37,13 @@ export class ExportHandler implements IHandler {
           timeoutMs: z.number().int().min(1000).default(300000),
         },
         handler: compose(withLogging('export_batchFolder'), withErrorHandling())(this.batchFolder.bind(this)),
+      },
+      {
+        name: 'export_package',
+        description:
+          'Package the active document for print: collect fonts, linked graphics and a report into a folder. Unlike exporting, this gathers the document’s dependencies so it can be handed to a printer',
+        inputSchema: packageSchema.shape,
+        handler: compose(withLogging('export_package'), withErrorHandling())(this.packageDocument.bind(this)),
       },
       {
         name: 'export_preflight',
@@ -111,7 +118,6 @@ export class ExportHandler implements IHandler {
       html: 'ExportFormat.HTML',
       jpg: 'ExportFormat.JPG',
       png: 'ExportFormat.PNG_FORMAT',
-      package: 'ExportFormat.PACKAGE',
     };
     
     const resolvedPathError = filePathError(params.filePath || `~/Desktop/export.${params.format}`);
@@ -191,6 +197,84 @@ const exportFormat = formatMap[params.format];
       const message = err instanceof Error ? err.message : String(err);
       return {
         content: [{ type: 'text', text: `Batch export failed: ${message}` }],
+        isError: true,
+      };
+    }
+  }
+
+  private async packageDocument(args: unknown, _extra: any): Promise<ToolResult> {
+    const params = packageSchema.parse(args);
+
+    const folderCheck = validateFilePath(params.folderPath);
+    if (!folderCheck.valid) {
+      return {
+        content: [{ type: 'text', text: `Invalid folder path: ${folderCheck.error}` }],
+        isError: true,
+      };
+    }
+
+    // Fourteen positional arguments, in the order the DOM reference lists them.
+    // `to` accepts a folder, an alias or a path; a Folder satisfies it because
+    // Folder is the directory flavour of the same file-system object.
+    const pdfStyle = params.pdfStyle ? `"${this.escape(params.pdfStyle)}"` : '""';
+    const versionComments = params.versionComments
+      ? `"${this.escape(params.versionComments)}"`
+      : '""';
+
+    const code = `
+      var __doc = __resolveDocument();
+      var __folder = new Folder("${this.escape(params.folderPath)}");
+      if (!__folder.exists && !__folder.create()) {
+        JSON.stringify({ ok: false, error: "Cannot create package folder: " + __folder.fsName });
+      } else {
+        try {
+          __doc.packageForPrint(
+            __folder,
+            ${params.copyingFonts},
+            ${params.copyingLinkedGraphics},
+            ${params.copyingProfiles},
+            ${params.updatingGraphics},
+            ${params.includingHiddenLayers},
+            ${params.ignorePreflightErrors},
+            ${params.creatingReport},
+            ${params.includeIdml},
+            ${params.includePdf},
+            ${pdfStyle},
+            ${params.useDocumentHyphenationExceptionsOnly},
+            ${versionComments},
+            ${params.forceSave}
+          );
+          var __packed = __folder.getFiles();
+          var __names = [];
+          for (var i = 0; i < __packed.length; i++) {
+            __names.push(__packed[i].name);
+          }
+          JSON.stringify({
+            ok: true,
+            document: __doc.name,
+            packagedInto: __folder.fsName,
+            fileCount: __names.length,
+            files: __names
+          });
+        } catch (__e) {
+          JSON.stringify({
+            ok: false,
+            error: String(__e.message || __e),
+            hint: ${params.ignorePreflightErrors}
+              ? "Packaging failed. Check the message above; the folder may be read-only or on a full volume."
+              : "Packaging cancels itself when preflight reports errors. Run export_preflight to see them, fix them, or set ignorePreflightErrors: true to package anyway."
+          });
+        }
+      }
+    `;
+
+    try {
+      const response = await this.executor.execute(code, params.timeoutMs);
+      return formatResponse(response.result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        content: [{ type: 'text', text: `Packaging failed: ${message}` }],
         isError: true,
       };
     }

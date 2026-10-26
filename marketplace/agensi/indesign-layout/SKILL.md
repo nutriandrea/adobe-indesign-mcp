@@ -6,7 +6,7 @@ description: "Uses Adobe InDesign to produce real layout work: documents, pages,
 # Layout in Adobe InDesign
 
 Drives a running Adobe InDesign through the `indesign-nutria-mcp` server, whose
-197 tools — typed, validated and grouped by object — cover documents, pages,
+198 tools — typed, validated and grouped by object — cover documents, pages,
 text, styles, tables, colour, images, masters, footnotes, cross-references,
 tables of contents, indexes, data merge, books and export.
 
