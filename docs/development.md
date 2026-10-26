@@ -38,7 +38,7 @@ want for development.
 | `npm run verify:tool-counts` | fails if any advertised tool count drifts from the registry |
 | `npm run docs:tools` | regenerates `docs/available-tools.md` from the registry |
 | `npm run verify:docs` | fails if `docs/available-tools.md` is stale |
-| `npm run verify:pack` | build → `npm pack` → install the tarball → boot it and assert 197 tools |
+| `npm run verify:pack` | build → `npm pack` → install the tarball → boot it and assert 198 tools |
 | `npm run server:json` | regenerates `server.json` (the MCP Registry manifest) from `package.json` |
 | `npm run verify:server-json` | fails if `server.json` is stale |
 | `npm run build:mcpb` | packs `dist-mcpb/indesign-nutria-mcp-<version>.mcpb` (MCP Bundle, ~10 MB) |
@@ -123,7 +123,7 @@ What it does:
 1. boots the server on a **non-default port** (`SMOKE_PORT`, default `8131`) so
    it never fights a bridge you already have running;
 2. checks `initialize` advertises the workflow contract and `tools/list`
-   returns 197 tools;
+   returns 198 tools;
 3. starts `bridge-proxy.mjs` and waits for `mcp://bridge/status` to report
    connected;
 4. creates a document, adds a text frame, reads it back, calls
@@ -214,7 +214,7 @@ Four scripts guard the things that go stale silently:
   with the package with a generic "package validation failed", so this is the
   cheap place to catch it.
 - **`verify:pack`** packs the tarball, installs it into a temp dir, boots the
-  packed entry point over stdio, and asserts it advertises 197 tools — the check
+  packed entry point over stdio, and asserts it advertises 198 tools — the check
   that catches a `files` allowlist shipping `start-bridge.sh` without the
   `bridge-proxy.mjs` it execs. It also asserts those runtime files are present by
   name, because a handshake alone would not notice: the server only reaches for
@@ -257,7 +257,7 @@ Two facts to know before touching them:
 own output: it re-opens the finished archive, asserts `manifest.json` is at the
 root, asserts `assets/windows/run_jsx_persistent.vbs` is where the Windows path
 reaches for it, and boots the server inside the archive to confirm it answers
-`initialize` with the workflow contract and 197 tools. It also prints the
+`initialize` with the workflow contract and 198 tools. It also prints the
 SHA-256 of the artifact, which a future `registryType: "mcpb"` entry in
 `server.json` would need. The archive is deliberately not byte-reproducible —
 `npm install` writes metadata — so the hash is of the uploaded artifact, not of
