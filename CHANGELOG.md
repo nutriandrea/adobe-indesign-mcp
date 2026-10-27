@@ -10,18 +10,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- tool-names: ignore resource_updateLink -->
 
 ### Added
+- **`typography_audit` — what the type in a document is actually made of, in one
+  read-only pass.** It reports every font in use with the status the document
+  carries (`installed`, `fauxed`, `substituted`, `not_available`), the
+  point-size and leading pairs with how many paragraphs fall into each, how many
+  paragraphs use each paragraph style and how many of those carry a local
+  override, and the text that has no paragraph style at all. Findings carry
+  samples with the page they sit on, so a count of 40 overrides is something an
+  operator can walk to, and `truncated` says so when `maxParagraphs` stopped the
+  walk rather than passing a partial read off as complete.
+
+  Three facts from the live DOM shaped it. `Font.status` is the only member that
+  reports a substituted or missing font — `isValid` does not — and it is
+  expensive: enumerating `app.fonts` on a machine with 1817 installed fonts
+  measured roughly 400 ms per font, so the audit never walks that collection and
+  asks `status` once per font actually in use. `styleOverridden` is the honest
+  override signal, read per paragraph. And "no paragraph style" is matched
+  against `doc.paragraphStyles[0].id`, not its name, because the name is
+  localised (`[Nessuno stile paragrafo]` here, `[No paragraph style]` elsewhere).
+
+  It does not judge and it does not write: 9.5/12 next to 9/11 is a fact, not a
+  verdict, and the live gate proves the document is untouched by saving it,
+  auditing it twice, and checking that InDesign's `modified` flag stayed false.
+
 - **`npm run smoke:dom` turns the fixes below into assertions against a live
   InDesign.** The unit suite pins the shape of the ExtendScript each handler
   emits; it cannot know whether InDesign has the member that script names, and
   that is exactly how `Image.imageLink`, `Link.embedded`, `Link.embed()` and
   `Document.preflightProcesses` shipped: six tools failed on every document
-  while the suite stayed green. The new gate covers three areas in throwaway
+  while the suite stayed green. The new gate covers four areas in throwaway
   documents — images (source path, real native and effective resolution, relink,
   deleted source), links (readable status, embed and unembed, out-of-date and
-  missing detection, bulk update) and preflight plus packaging (findings with
-  page and detail, unknown profile, no leaked process, report matched against
-  the folder on disk). 48 checks, its own bridge port, and a clean skip when
-  InDesign is not running.
+  missing detection, bulk update), preflight plus packaging (findings with page
+  and detail, unknown profile, no leaked process, report matched against the
+  folder on disk) and the typography audit above. 67 checks, its own bridge
+  port, and a clean skip when InDesign is not running.
 - **`export_package` — packaging for print.** Collects the fonts and linked
   graphics a document depends on, plus the package report, into one folder, via
   `Document.packageForPrint`. The tool passes all fourteen positional arguments

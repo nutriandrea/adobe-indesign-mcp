@@ -46,6 +46,7 @@ export async function loadHandlers(): Promise<HandlerTools[]> {
   const { SectionHandler } = await import('../../src/handlers/SectionHandler.js');
   const { ColorHandler } = await import('../../src/handlers/ColorHandler.js');
   const { FontHandler } = await import('../../src/handlers/FontHandler.js');
+  const { TypographyHandler } = await import('../../src/handlers/TypographyHandler.js');
   const { ImageHandler } = await import('../../src/handlers/ImageHandler.js');
   const { LayerHandler } = await import('../../src/handlers/LayerHandler.js');
   const { ShapeHandler } = await import('../../src/handlers/ShapeHandler.js');
@@ -85,6 +86,7 @@ export async function loadHandlers(): Promise<HandlerTools[]> {
     ['SectionHandler', SectionHandler as never],
     ['ColorHandler', ColorHandler as never],
     ['FontHandler', FontHandler as never],
+    ['TypographyHandler', TypographyHandler as never],
     ['ImageHandler', ImageHandler as never],
     ['LayerHandler', LayerHandler as never],
     ['ShapeHandler', ShapeHandler as never],

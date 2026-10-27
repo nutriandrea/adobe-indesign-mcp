@@ -422,6 +422,107 @@ async function main() {
     { savePath: join(workdir, 'preflight.indd') },
   );
 
+  // ── Typography audit ──────────────────────────────────────────────────────
+  begin('typography');
+  await withDocument(
+    async () => {
+      await script(`
+        var doc = __resolveDocument();
+        var corpo = doc.paragraphStyles.add({ name: "Corpo" });
+        corpo.pointSize = 10;
+        corpo.leading = 12;
+        var tf = doc.pages[0].textFrames.add({ geometricBounds: [20, 20, 150, 150] });
+        tf.contents = "Titolo\\rCorpo uno\\rCorpo due\\rSenza stile";
+        for (var i = 0; i < 3; i++) { tf.paragraphs[i].appliedParagraphStyle = corpo; }
+        tf.paragraphs[2].pointSize = 9;
+        "built";
+      `);
+      await callJson('document_save', { filePath: join(workdir, 'typography.indd') });
+
+      // A saved document has modified === false. If the audit writes anything,
+      // even a hidden change, InDesign sets it back to true — which is the only
+      // assertion that can tell "read-only" from "looks read-only".
+      const saved = await scriptJson('JSON.stringify({ modified: __resolveDocument().modified })');
+      check('the document starts saved, so a write would be visible', saved.modified === false, String(saved.modified));
+
+      const audit = await callJson('typography_audit', {});
+      check(
+        'the audit walks every paragraph',
+        audit.document.length > 0 && audit.paragraphs === 4,
+        `paragraphs=${audit.paragraphs}`,
+      );
+      check('it reports the document shape', audit.pages === 1 && audit.stories === 1, `pages=${audit.pages} stories=${audit.stories}`);
+      check('it is not truncated on a small document', audit.truncated === false, String(audit.truncated));
+      check(
+        'it reports the font status the paragraph carries',
+        audit.fonts.length > 0 && audit.fonts.every((font) => font.status === 'installed'),
+        JSON.stringify(audit.fonts.map((font) => font.status)),
+      );
+      check('it counts the paragraphs that use each font', audit.fonts[0]?.paragraphs === 4, String(audit.fonts[0]?.paragraphs));
+      check('it finds no missing font in a healthy document', audit.missingFonts.length === 0, JSON.stringify(audit.missingFonts));
+
+      const corpo = audit.paragraphStyles.find((style) => style.name === 'Corpo');
+      check('it reports how many paragraphs use a style', corpo?.paragraphs === 3, JSON.stringify(corpo ?? null).slice(0, 140));
+      check('it counts the paragraph carrying a local override', corpo?.overridden === 1, String(corpo?.overridden));
+      check(
+        'the override sample names the page',
+        corpo?.overriddenSamples?.[0]?.page === '1',
+        JSON.stringify(corpo?.overriddenSamples ?? null).slice(0, 140),
+      );
+
+      check(
+        'it reports the size the override introduced',
+        audit.sizes.some((size) => size.pointSize === 9),
+        JSON.stringify(audit.sizes).slice(0, 160),
+      );
+      check(
+        'it reports the style size separately',
+        audit.sizes.some((size) => size.pointSize === 10 && size.leading === 12),
+        JSON.stringify(audit.sizes).slice(0, 160),
+      );
+      check(
+        'it reports auto leading as auto rather than as a number',
+        audit.sizes.some((size) => size.leading === 'auto' && size.autoLeading === 120),
+        JSON.stringify(audit.sizes).slice(0, 160),
+      );
+
+      await script(`
+        var doc = __resolveDocument();
+        doc.pages[0].textFrames[0].paragraphs[3].appliedParagraphStyle = doc.paragraphStyles[0];
+        "done";
+      `);
+      const withUnstyled = await callJson('typography_audit', { samplesPerFinding: 1 });
+      check(
+        'it counts text with no paragraph style at all',
+        withUnstyled.unstyled.paragraphs === 1,
+        JSON.stringify(withUnstyled.unstyled),
+      );
+      check(
+        'it samples that text with its page',
+        withUnstyled.unstyled.samples[0]?.page === '1' &&
+          /Senza stile/.test(withUnstyled.unstyled.samples[0]?.preview ?? ''),
+        JSON.stringify(withUnstyled.unstyled.samples[0] ?? null),
+      );
+      check('the sample cap is honoured', withUnstyled.unstyled.samples.length <= 1, String(withUnstyled.unstyled.samples.length));
+
+      // Saving again resets the flag, because the step above changed the
+      // document on purpose. Only then does a set flag mean the audit wrote.
+      await callJson('document_save', { filePath: join(workdir, 'typography.indd') });
+      const savedAgain = await scriptJson('JSON.stringify({ modified: __resolveDocument().modified })');
+      check('the document is saved again before the read-only check', savedAgain.modified === false, String(savedAgain.modified));
+
+      const capped = await callJson('typography_audit', { maxParagraphs: 2 });
+      check(
+        'it stops at the cap and says so rather than reporting a lie',
+        capped.truncated === true && capped.paragraphs === 2,
+        `paragraphs=${capped.paragraphs} truncated=${capped.truncated}`,
+      );
+      await callJson('typography_audit', {});
+      const after = await scriptJson('JSON.stringify({ modified: __resolveDocument().modified })');
+      check('the audit left the document unmodified', after.modified === false, String(after.modified));
+    },
+    { savePath: join(workdir, 'typography.indd') },
+  );
 }
 
 let failure = null;

@@ -4,7 +4,7 @@
 > Regenerate with `npm run docs:tools`. CI (`npm run verify:docs`) fails
 > the build if this file no longer matches the registry.
 
-**198 tools across 34 handlers.** This is the live registry — the same list the server serves over `mcp://tools/inventory`.
+**199 tools across 35 handlers.** This is the live registry — the same list the server serves over `mcp://tools/inventory`.
 
 ## Contents
 
@@ -32,6 +32,7 @@
 - [Section](#section) — 4
 - [Color](#color) — 6
 - [Font](#font) — 5
+- [Typography](#typography) — 1
 - [Image](#image) — 5
 - [Layer](#layer) — 5
 - [Shape](#shape) — 6
@@ -367,6 +368,14 @@ _5 tools_
 | `font_change` | Change font of selected text |
 | `font_glyph_insert` | Insert a special glyph at the cursor position |
 | `font_missing_check` | Check for missing fonts in the document |
+
+## Typography
+
+_1 tools_
+
+| Tool | Description |
+|------|-------------|
+| `typography_audit` | Audit the typography of a document without changing it: every font in use with its status (installed, fauxed, substituted, not available), the point-size and leading combinations, how many paragraphs use each paragraph style and how many of those carry local overrides, and the text that has no paragraph style at all. Samples carry the page name so a finding can be found. Read-only — nothing in the document is modified |
 
 ## Image
 

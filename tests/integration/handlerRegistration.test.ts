@@ -22,6 +22,7 @@ import { TextAdvancedHandler } from '../../src/handlers/TextAdvancedHandler.js';
 import { ColorHandler } from '../../src/handlers/ColorHandler.js';
 import { EffectHandler } from '../../src/handlers/EffectHandler.js';
 import { FontHandler } from '../../src/handlers/FontHandler.js';
+import { TypographyHandler } from '../../src/handlers/TypographyHandler.js';
 import { GrepHandler } from '../../src/handlers/GrepHandler.js';
 import { ImageHandler } from '../../src/handlers/ImageHandler.js';
 import { IndexHandler } from '../../src/handlers/IndexHandler.js';
@@ -65,6 +66,7 @@ describe('Handler Registration', () => {
     { name: 'ColorHandler', instance: new ColorHandler(new ScriptExecutor(5000)) },
     { name: 'EffectHandler', instance: new EffectHandler(new ScriptExecutor(5000)) },
     { name: 'FontHandler', instance: new FontHandler(new ScriptExecutor(5000)) },
+    { name: 'TypographyHandler', instance: new TypographyHandler(new ScriptExecutor(5000)) },
     { name: 'GrepHandler', instance: new GrepHandler(new ScriptExecutor(5000)) },
     { name: 'ImageHandler', instance: new ImageHandler(new ScriptExecutor(5000)) },
     { name: 'IndexHandler', instance: new IndexHandler(new ScriptExecutor(5000)) },
@@ -131,12 +133,12 @@ describe('Handler Registration', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('should produce exactly 198 tools across all 34 handlers', () => {
+  it('should produce exactly 199 tools across all 35 handlers', () => {
     let total = 0;
     for (const { instance } of handlerPairs) {
       total += instance.tools.length;
     }
-    expect(total).toBe(198);
+    expect(total).toBe(199);
   });
 
   it('should have tool names prefixed with handler category', () => {
