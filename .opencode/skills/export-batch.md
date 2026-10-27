@@ -28,7 +28,7 @@ PREPARA documenti → DEFINISCI profili export → ESEGUI batch → VERIFICA out
 ## Step 1: Prepara il documento
 
 Prima dell'export batch, assicurati che:
-1. **Tutti i link siano aggiornati**: usa `resource_updateLink` su link mancanti
+1. **Tutti i link siano aggiornati**: usa `resources_updateLink` su link mancanti
 2. **Nessun overflow**: usa `layout-readability` skill
 3. **Bleed impostato**: se per stampa, verifica `document_getInfo` abbia bleed
 4. **Salva il documento**: `doc.save()`
@@ -154,7 +154,7 @@ for (var p = 0; p < doc.pages.length; p++) {
 
 Se hai bisogno di PNG o formati non supportati da ExtendScript, usa il bridge-proxy:
 
-Tool: `script_execute` con comando JXA tramite `bridge-proxy.mjs`
+Tool: `script_run` con comando JXA tramite `bridge-proxy.mjs`
 
 ```javascript
 // bridge-proxy.mjs via osascript/JXA
