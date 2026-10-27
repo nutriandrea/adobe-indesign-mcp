@@ -77,6 +77,7 @@
     "smoke:macos": "node scripts/smoke-macos.mjs",
     "smoke:target": "node scripts/smoke-document-target.mjs",
     "smoke:recipes": "node scripts/smoke-recipes.mjs",
+    "smoke:dom": "node scripts/smoke-dom-contracts.mjs",
     "prepublishOnly": "npm run verify && npm run verify:pack"
   },
   "dependencies": {
