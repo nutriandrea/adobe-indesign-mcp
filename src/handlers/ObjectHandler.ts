@@ -86,11 +86,11 @@ export class ObjectHandler implements IHandler {
       var result = [];
       for (var i = 0; i < allImages.length; i++) {
         var img = allImages[i];
-        var link = img.imageLink;
+        var link = img.itemLink;
         result.push({
           index: i,
           filePath: link ? link.filePath : 'embedded',
-          linkStatus: link ? link.status : 'embedded',
+          linkStatus: __linkStatus(link),
           bounds: img.geometricBounds
         });
       }
@@ -107,8 +107,8 @@ export class ObjectHandler implements IHandler {
       for (var i = 0; i < allLinks.length; i++) {
         result.push({
           filePath: allLinks[i].filePath,
-          status: allLinks[i].status,
-          embedded: allLinks[i].embedded
+          status: __linkStatus(allLinks[i]),
+          embedded: __isEmbedded(allLinks[i])
         });
       }
       JSON.stringify(result);

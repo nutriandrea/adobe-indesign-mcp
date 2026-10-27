@@ -167,7 +167,10 @@ describe('ImageHandler', () => {
 
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('imageLink.relink');
+      // The DOM property is itemLink; imageLink does not exist and made this
+      // tool fail live with "Object does not support the property or method".
+      expect(code).toContain('itemLink.relink');
+      expect(code).not.toContain('imageLink');
       expect(code).toContain('new/path.jpg');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
@@ -197,9 +200,27 @@ describe('ImageHandler', () => {
 
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('imageLink');
+      expect(code).toContain('img.itemLink');
+      expect(code).not.toContain('imageLink');
       expect(code).toContain('geometricBounds');
       expect(result.content[0]).toHaveProperty('type', 'text');
+    });
+
+    it('reads real resolution instead of inventing it', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: { actualPpi: 300, effectivePpi: 150 } });
+      const handler = new ImageHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'image_info')!;
+      await tool.handler({ pageIndex: 0, itemIndex: 0 }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('img.effectivePpi');
+      expect(code).toContain('img.actualPpi');
+      // horizontalScale is a percentage, and the old code paired it with a
+      // hardcoded 300, so both numbers were wrong for every real image.
+      expect(code).not.toContain('horizontalScale');
+      expect(code).not.toContain('actualPpi: 300');
     });
 
     it('should return image info from executor', async () => {

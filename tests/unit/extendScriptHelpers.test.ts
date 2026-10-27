@@ -140,6 +140,41 @@ describe('extendScriptHelpers', () => {
     expect(EXTENDSCRIPT_HELPERS).toContain('is not open. Open documents:');
   });
 
+  it('maps every LinkStatus enum member to a word', async () => {
+    const { EXTENDSCRIPT_HELPERS } = await import(
+      '../../src/bridge/extendScriptHelpers.js'
+    );
+    // Link.status is a numeric enum, so the old `link.status` serialised as {}
+    // and told a caller nothing. All five members of the DOM's LinkStatus enum
+    // must have a name here, or a status would silently become 'unknown'.
+    expect(EXTENDSCRIPT_HELPERS).toContain('function __linkStatus');
+    for (const member of [
+      'LinkStatus.NORMAL',
+      'LinkStatus.LINK_OUT_OF_DATE',
+      'LinkStatus.LINK_MISSING',
+      'LinkStatus.LINK_EMBEDDED',
+      'LinkStatus.LINK_INACCESSIBLE',
+    ]) {
+      expect(EXTENDSCRIPT_HELPERS, member).toContain(member);
+    }
+    expect(EXTENDSCRIPT_HELPERS).toContain("'link_out_of_date'");
+    expect(EXTENDSCRIPT_HELPERS).toContain("'link_missing'");
+    expect(EXTENDSCRIPT_HELPERS).toContain("'link_inaccessible'");
+  });
+
+  it('decides embedding from the link status, the only reliable signal', async () => {
+    const { EXTENDSCRIPT_HELPERS } = await import(
+      '../../src/bridge/extendScriptHelpers.js'
+    );
+    // Link.embedded does not exist, and Link.needed is false for ordinary
+    // linked files as well as for embedded ones, so the status is the only
+    // signal that separates the two.
+    expect(EXTENDSCRIPT_HELPERS).toContain('function __isEmbedded');
+    expect(EXTENDSCRIPT_HELPERS).toContain(
+      'return link.status === LinkStatus.LINK_EMBEDDED;'
+    );
+  });
+
   it('should not use const or let anywhere in the helpers', async () => {
     const { EXTENDSCRIPT_HELPERS } = await import(
       '../../src/bridge/extendScriptHelpers.js'

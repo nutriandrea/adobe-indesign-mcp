@@ -271,6 +271,30 @@ function __getItemInfo(item) {
 // ── Script result wrapper ──
 function __ok(data) { return JSON.stringify({ ok: true, data: data }); }
 
+// ── Link status ──
+// Link.status is a LinkStatus enum, which is a Number. JSON.stringify turns a
+// host enum into {}, so every tool that reported link.status returned an empty
+// object and told the caller nothing. Map the enum to a word instead.
+function __linkStatus(link) {
+  if (!link) { return 'embedded'; }
+  var status = link.status;
+  if (status === LinkStatus.NORMAL) { return 'normal'; }
+  if (status === LinkStatus.LINK_OUT_OF_DATE) { return 'link_out_of_date'; }
+  if (status === LinkStatus.LINK_MISSING) { return 'link_missing'; }
+  if (status === LinkStatus.LINK_EMBEDDED) { return 'embedded'; }
+  if (status === LinkStatus.LINK_INACCESSIBLE) { return 'link_inaccessible'; }
+  return 'unknown';
+}
+
+// ── Embedded links ──
+// Link.embedded does not exist, and Link.needed is false for ordinary linked
+// files too, so neither can answer "is this embedded?". InDesign marks an
+// embedded link with the LINK_EMBEDDED status instead.
+function __isEmbedded(link) {
+  if (!link) { return false; }
+  return link.status === LinkStatus.LINK_EMBEDDED;
+}
+
 function __fail(msg) { return JSON.stringify({ ok: false, error: String(msg) }); }
 
 function __try(fn) {

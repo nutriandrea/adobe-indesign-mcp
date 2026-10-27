@@ -59,7 +59,8 @@ describe('ObjectHandler', () => {
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('allGraphics');
-      expect(code).toContain('imageLink');
+      expect(code).toContain('img.itemLink');
+      expect(code).not.toContain('imageLink');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
 
