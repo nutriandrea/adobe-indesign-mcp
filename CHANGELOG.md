@@ -62,6 +62,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `link_missing`) and 23/23 for the link tools (embed → unembed → a source
   edited on disk reported as `link_out_of_date` and updated → a source deleted
   reported as missing rather than silently "updated").
+- **`export_preflight` could not run at all.** It looked for
+  `preflightProcesses` on the *document*, where the collection does not exist —
+  it lives on `Application` — then called `add()` with only a profile name,
+  called `start()` on the process, and read a `process.errors` that the DOM
+  never defines. Every call failed. The documented API is
+  `Application.preflightProcesses.add(document, appliedProfile)` plus
+  `waitForProcess()` and `aggregatedResults`; the profile is **required**, so
+  the tool now passes one explicitly. Because `waitForProcess()` returns
+  `false` and can throw for a process that has already finished, its value is
+  not reported as truth: the tool reads the results the DOM actually exposes
+  and says whether it found problems. The result carries `hasErrors`, the
+  findings with the hierarchy InDesign groups them in (`parentNodeID`,
+  `errorName`, `pageNumber`, `errorInfo`, `details`) and the raw
+  `processResults` report, plus the profile that ran. `itemByName()` cannot
+  resolve the profile InDesign itself lists as `[Basic]` / `[di base]` — the
+  brackets defeat it — so names are matched against the collection, and an
+  unknown name fails with the list of profiles that do exist. The old
+  `waitForCompletion` flag is gone, since a process left running and then
+  auto-removed cannot be read; `timeoutSeconds` bounds the wait instead.
+  Verified live against InDesign 2026 on macOS (16/16 checks): a clean document
+  reports `hasErrors: false`, a document with overset text reports the three
+  findings with page and remedy text, an unknown profile lists both available
+  profiles, and four consecutive runs left no preflight process behind.
+  The same run also showed that **packaging uses the preflight setup embedded
+  in the document**, not the profile this tool runs: a document with overset
+  text and no embedded profile packages successfully, so the two can disagree.
+  The `export_package` hints and this tool's description now say so.
 - **The Windows COM bridge mangled every non-ASCII character.**
   `run_jsx_persistent.vbs` read the `.jsx` that `ComScriptExecutor` writes as
   UTF-8 through `FileSystemObject.OpenTextFile`, which decodes in the system

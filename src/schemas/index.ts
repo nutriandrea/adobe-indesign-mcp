@@ -134,6 +134,16 @@ export const executeCodeSchema = z.object({
 });
 
 export const preflightSchema = z.object({
-  profile: z.string().optional(),
-  waitForCompletion: z.boolean().default(true),
+  profile: z
+    .string()
+    .optional()
+    .describe('Name of the preflight profile to run; defaults to the first profile InDesign lists'),
+  timeoutSeconds: z
+    .number()
+    .int()
+    .min(1)
+    .max(300)
+    .optional()
+    .default(30)
+    .describe('How long to wait for the preflight process before reading what it has found'),
 });
