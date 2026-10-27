@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+<!-- tool-names: ignore resource_updateLink -->
+
 ### Added
 - **`export_package` — packaging for print.** Collects the fonts and linked
   graphics a document depends on, plus the package report, into one folder, via
@@ -27,6 +29,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a copy of the document.
 
 ### Fixed
+- **Six skill files told agents to call tools that do not exist.** A skill is
+  instruction, so a name that does not resolve sends a model into a second
+  failure on top of the one it was recovering from. `script_execute` (the tool
+  is `script_run`) appeared in five files, `document_export` (it is
+  `export_document`), `style_createSwatch` (it is `color_swatch_create`) and
+  `resource_updateLink` (it is `resources_updateLink`). The last one is the
+  quiet kind: one missing letter, and the model reads a plausible name and
+  fails where it was told to succeed. Two of the corrections also fixed the
+  sentence around them — nothing exports a `.docx`, and colours can be created
+  one at a time with a tool, so the advice no longer contradicts itself.
+  New guard `npm run verify:tool-names`, wired into `npm run verify` and CI,
+  because the existing checks could not see this: `verify:tool-counts` compares
+  numbers and `verify:docs` compares the generated catalog with the registry,
+  while the prose that points at the catalog went unchecked. Skill files are
+  checked strictly — every backticked `snake_case` token must be a registered
+  tool, except documented non-tool identifiers such as the `document_id`
+  parameter. Other shipped markdown is prose and may name error codes
+  (`page_not_found`) legitimately, so there only near misses within an edit
+  distance of two are reported; that rule produces no false positives across
+  the repo, and it caught the three `resource_updateLink` occurrences a strict
+  reading of the catalogue had missed. `plans/` is excluded: those are design
+  documents frozen at the date they were written.
 - **The image and link tools called DOM members that do not exist.** Four of
   them failed outright, and one reported numbers it had invented:
   - `Image.imageLink` is not a property. The source file of a placed graphic is

@@ -27,7 +27,7 @@ SELEZIONA pagine (range/tutte) → DEFINISCI operazione → APPLICA a ogni pagin
 
 ## Metodo 1: Via ExtendScript (batch lato InDesign)
 
-Usa `script_execute` per fare un ciclo su tutte le pagine in un unico script:
+Usa `script_run` per fare un ciclo su tutte le pagine in un unico script:
 
 ```extendscript
 var doc = app.activeDocument;

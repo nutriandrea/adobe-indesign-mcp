@@ -48,7 +48,7 @@ frame.place(File("/path/immagine.jpg"));
 
 ## Step 2: Ridimensiona
 
-Tool: `shape_create` con dimensioni specifiche, oppure `script_execute`:
+Tool: `shape_create` con dimensioni specifiche, oppure `script_run`:
 
 ```extendscript
 // Fit proporzionale
@@ -162,4 +162,4 @@ Usa la skill `export-verify` per controllare:
 | Immagine non visibile | Layer bloccato o nascosto | `layer.visible = true` |
 | Place fallisce | Percorso file errato o permessi | Verifica percorso, usa `File()` con path assoluto |
 | Memory error con molte immagini | Documento troppo pesante | Link immagini invece di embed |
-| Frame rosso (link mancante) | File spostato/cancellato | `resource_updateLink` con nuovo percorso |
+| Frame rosso (link mancante) | File spostato/cancellato | `resources_updateLink` con nuovo percorso |

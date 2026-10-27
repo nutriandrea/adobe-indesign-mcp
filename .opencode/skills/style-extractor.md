@@ -37,7 +37,7 @@ CARTELLA .indd → FASE 1: ANALIZZA → PROFILO STILE (JSON) → FASE 2: CREA DO
 
 ### Step 1.1: Elenca file .indd nella cartella
 
-Usa `script_execute` per scansionare la cartella:
+Usa `script_run` per scansionare la cartella:
 
 ```extendscript
 var cartella = Folder("/path/ai/tuoi/indd");
@@ -66,7 +66,7 @@ Tool disponibili per l'estrazione:
 | Master spread | `export_getMasterSpreads` | Nome, pagine |
 | Layers | `layer_list` | Nome, visibilità, blocco |
 
-> **Attenzione**: I tool `style_list*` danno solo i nomi. Per estrarre le **proprietà complete** (font, size, colore, leading, tracking, spazio prima/dopo, rientri) devi usare uno `script_execute` dedicato.
+> **Attenzione**: I tool `style_list*` danno solo i nomi. Per estrarre le **proprietà complete** (font, size, colore, leading, tracking, spazio prima/dopo, rientri) devi usare uno `script_run` dedicato.
 
 ### Step 1.3: Script di estrazione completa stili (singolo blocco)
 
@@ -291,7 +291,7 @@ Usa i parametri estratti dal profilo:
 
 ### Step 2.2: Configura bleed e colonne
 
-Se il profilo ha bleed o colonne, applica via script_execute:
+Se il profilo ha bleed o colonne, applica via script_run:
 
 ```extendscript
 var doc = app.activeDocument;
@@ -306,7 +306,7 @@ doc.documentPreferences.columnGutter = "5mm";
 
 ### Step 3.1: Crea swatches (colori)
 
-Tool: `script_execute` (non esiste un tool MCP diretto per creare swatches)
+Tool: `color_swatch_create` per un colore alla volta, oppure `script_run` per crearli tutti in un passaggio:
 
 ```extendscript
 var doc = app.activeDocument;

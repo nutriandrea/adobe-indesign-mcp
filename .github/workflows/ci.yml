@@ -47,6 +47,11 @@ jobs:
       # advertise against the real registry.
       - run: npm run verify:tool-counts
 
+      # A shipped document that names a tool the registry does not have sends an
+      # agent into a second failure. Skill files are instruction, so every tool
+      # name in them must resolve; elsewhere only near misses are reported.
+      - run: npm run verify:tool-names
+
       # docs/available-tools.md is generated from the registry; fail if it has
       # drifted from the code.
       - run: npm run verify:docs

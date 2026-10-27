@@ -25,7 +25,7 @@ APRI/CREA documento → PLACE .docx → LEGGI stili importati → MAPPA stili Wo
 
 ## Step 1: Place del file .docx
 
-Usa `document_export` o `script_execute` per fare il place:
+Non esiste un tool dedicato all'import di un `.docx`: usa `script_run` per fare il place:
 
 ```extendscript
 app.activeDocument.place(File("/path/al/file.docx"));

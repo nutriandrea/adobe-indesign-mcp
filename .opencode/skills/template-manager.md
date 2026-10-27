@@ -186,8 +186,8 @@ Usa la skill `layout-readability` dopo il caricamento:
 | Problema | Soluzione |
 |---|---|
 | Template ha font non installati | Usa `app.fonts` per verificare la presenza prima del template |
-| Link immagini template rotti | Aggiorna path con `resource_updateLink` dopo il caricamento |
-| Colori template non presenti | Crea colore mancante con `style_createSwatch` |
+| Link immagini template rotti | Aggiorna path con `resources_updateLink` dopo il caricamento |
+| Colori template non presenti | Crea colore mancante con `color_swatch_create` |
 | Master spread non copiati | Usa `doc.masterSpreads[0].duplicate()` per copiare i master dal template |
 | Pagina template troppo larga | Ridimensiona elementi dopo il place |
 | Placeholder testo NON sostituito | Cerca "Lorem" o "Titolo" e chiedi all'utente di personalizzare |
