@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- tool-names: ignore resource_updateLink -->
 
 ### Added
+- **`npm run smoke:dom` turns the fixes below into assertions against a live
+  InDesign.** The unit suite pins the shape of the ExtendScript each handler
+  emits; it cannot know whether InDesign has the member that script names, and
+  that is exactly how `Image.imageLink`, `Link.embedded`, `Link.embed()` and
+  `Document.preflightProcesses` shipped: six tools failed on every document
+  while the suite stayed green. The new gate covers three areas in throwaway
+  documents — images (source path, real native and effective resolution, relink,
+  deleted source), links (readable status, embed and unembed, out-of-date and
+  missing detection, bulk update) and preflight plus packaging (findings with
+  page and detail, unknown profile, no leaked process, report matched against
+  the folder on disk). 48 checks, its own bridge port, and a clean skip when
+  InDesign is not running.
 - **`export_package` — packaging for print.** Collects the fonts and linked
   graphics a document depends on, plus the package report, into one folder, via
   `Document.packageForPrint`. The tool passes all fourteen positional arguments

@@ -43,9 +43,10 @@ want for development.
 | `npm run verify:server-json` | fails if `server.json` is stale |
 | `npm run build:mcpb` | packs `dist-mcpb/indesign-nutria-mcp-<version>.mcpb` (MCP Bundle, ~10 MB) |
 | `npm run validate:release-tag` | fails unless the tag is `v<package.json version>` and has CHANGELOG notes |
-| `npm run verify` | `lint` + `verify:tool-counts` + `verify:docs` + `verify:server-json` + `test` (the CI gate) |
+| `npm run verify` | `lint` + `verify:tool-counts` + `verify:tool-names` + `verify:docs` + `verify:server-json` + `test` (the CI gate) |
 | `npm run smoke:macos` | the live four-process smoke test (needs a running InDesign) |
 | `npm run smoke:recipes` | the live gate for the two recipes (needs a running InDesign) |
+| `npm run smoke:dom` | the live gate for images, links and preflight (needs a running InDesign) |
 | `npm run smoke:target` | the live gate for `document_id` (needs a running InDesign) |
 
 ## Test layout
@@ -158,8 +159,45 @@ SKIP notice** when InDesign is closed, and is not part of CI either.
 
 > The `tests/e2e/` directory is still a placeholder for a broader live scenario
 > suite and is not wired into `npm test`. Today the working live tests are
-> `smoke:macos` (the bridge seams), `smoke:recipes` (the recipes) and
-> `smoke:target` (`document_id`).
+> `smoke:macos` (the bridge seams), `smoke:recipes` (the recipes),
+> `smoke:target` (`document_id`) and `smoke:dom` (images, links, preflight).
+
+### The DOM-contract live gate
+
+```bash
+npm run smoke:dom
+```
+
+The unit suite pins the *shape* of the ExtendScript each handler emits. It cannot
+know whether InDesign has the member that script names, and that gap shipped real
+defects. `Image.imageLink`, `Link.embedded`, `Link.embed()` and
+`Document.preflightProcesses` all read like documented API and none of them
+exist, so six tools failed on every document while the suite stayed green.
+
+`smoke:dom` is those failures written as assertions: 48 of them, in three
+sections, each in a throwaway document that is closed without saving.
+
+- **Images** — a place completes and reports the status it read, `image_list`
+  and `image_info` resolve the source through `itemLink`, the reported native
+  resolution is not the constant `300` and the effective resolution is not a
+  scale percentage, a relink takes effect, and a source deleted afterwards is
+  reported `link_missing`.
+- **Links** — listing, inspecting and reading an image's links all survive a
+  document that has a link, status comes back as a word rather than `{}`,
+  embedding goes through `unlink()` and unembedding with no folder links back to
+  the original source. Editing the file on disk must produce
+  `link_out_of_date`, which `resources_updateAllLinks` then fixes, and deleting
+  it must produce `link_missing`, which that tool reports by name instead of
+  throwing.
+- **Preflight** — a clean document reports no findings and the profile it ran, a
+  document with overset text reports them with page and detail, an unknown
+  profile fails and lists the profiles that exist, and no preflight process is
+  left behind. Packaging is checked in the same document: the report has to
+  match what is on disk, and a refusal may not also carry a copy count.
+
+It generates its own PNG sources, uses bridge port `8137` so it cannot collide
+with the main bridge on `8120`, and exits **0 with a SKIP notice** when InDesign
+is closed. It is not part of CI, for the same reason as the other live gates.
 
 ### The document-target live gate
 
