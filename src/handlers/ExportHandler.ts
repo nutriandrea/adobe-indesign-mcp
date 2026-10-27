@@ -47,7 +47,7 @@ export class ExportHandler implements IHandler {
       },
       {
         name: 'export_preflight',
-        description: 'Run a preflight check on the active document',
+        description: 'Run a preflight profile against a document and return the problems InDesign reports, including the hierarchy it groups them in. It runs the profile named, or the first profile InDesign lists; export_package instead uses the preflight setup embedded in the document, so the two can disagree',
         inputSchema: preflightSchema.shape,
         handler: compose(withLogging('export_preflight'), withErrorHandling())(this.preflight.bind(this)),
       },
@@ -257,7 +257,7 @@ const exportFormat = formatMap[params.format];
               error: "InDesign refused to package the document and wrote nothing.",
               hint: ${params.ignorePreflightErrors}
                 ? "Packaging returned false. The destination may be read-only or the document may be in a state that cannot be packaged."
-                : "This is what a failed preflight looks like: with ignorePreflightErrors false, packageForPrint returns false and copies nothing instead of raising. Run export_preflight to see the errors, fix them, or set ignorePreflightErrors: true to package anyway."
+                : "This is what a failed preflight looks like: with ignorePreflightErrors false, packageForPrint returns false and copies nothing instead of raising. Packaging checks the preflight setup embedded in the document; run export_preflight with that profile to see the errors, fix them, or set ignorePreflightErrors: true to package anyway."
             });
           } else {
             var __subfolders = [];
@@ -295,7 +295,7 @@ const exportFormat = formatMap[params.format];
             error: String(__e.message || __e),
             hint: ${params.ignorePreflightErrors}
               ? "Packaging raised. Check the message above; the folder may be read-only or on a full volume."
-              : "Packaging cancels itself when preflight reports errors. Run export_preflight to see them, fix them, or set ignorePreflightErrors: true to package anyway."
+              : "Packaging cancels itself when the document’s own preflight reports errors. Run export_preflight with that profile to see them, fix them, or set ignorePreflightErrors: true to package anyway."
           });
         }
       }
@@ -315,13 +315,81 @@ const exportFormat = formatMap[params.format];
 
   private async preflight(args: unknown, _extra: any): Promise<ToolResult> {
     const params = preflightSchema.parse(args);
-    const profileStr = params.profile ? `"${this.escape(params.profile)}"` : 'undefined';
+    const requested = params.profile ? this.escape(params.profile) : '';
+    // app.preflightProcesses, not Document.preflightProcesses: the collection
+    // lives on Application. add() requires the document *and* a profile, and
+    // PreflightProcess has no start()/errors, only waitForProcess() and
+    // aggregatedResults. A finished process removes itself, so everything has
+    // to be read before the app takes it away.
+    // itemByName() does not resolve the profile InDesign itself lists as
+    // "[di base]" / "[Basic]" — the brackets defeat it — so the name is matched
+    // against the collection instead of trusted to the lookup.
     const code = `
-      var process = __resolveDocument().preflightProcesses.add(${profileStr});
-      process.start();
-      var result = { errors: process.errors, warnings: [], status: 'completed' };
-      process.remove();
-      JSON.stringify(result);
+      var doc = __resolveDocument();
+      var wanted = "${requested}";
+      var profile = null;
+      if (wanted === '') {
+        profile = app.preflightProfiles.length ? app.preflightProfiles[0] : null;
+      } else {
+        for (var p = 0; p < app.preflightProfiles.length; p++) {
+          if (String(app.preflightProfiles[p].name) === wanted) {
+            profile = app.preflightProfiles[p];
+            break;
+          }
+        }
+      }
+      if (!profile || !profile.isValid) {
+        var available = [];
+        for (var a = 0; a < app.preflightProfiles.length; a++) {
+          available.push(app.preflightProfiles[a].name);
+        }
+        throw new Error("Preflight profile not found: " + wanted + ". Available profiles: " + available.join(' | '));
+      }
+      var proc = app.preflightProcesses.add(doc, profile);
+      try {
+        // A process that has already finished rejects the wait; its results
+        // are still readable below, so this is not a failure.
+        proc.waitForProcess(${params.timeoutSeconds});
+      } catch (e) {}
+      var findings = [];
+      var aggregateError = null;
+      try {
+        var agg = proc.aggregatedResults;
+        if (agg && agg[2]) {
+          for (var i = 0; i < agg[2].length; i++) {
+            var row = agg[2][i];
+            var details = [];
+            if (row[4]) {
+              for (var j = 0; j < row[4].length; j++) {
+                details.push({ label: String(row[4][j][0]), description: String(row[4][j][1]) });
+              }
+            }
+            findings.push({
+              parentNodeID: row[0],
+              errorName: String(row[1]),
+              pageNumber: String(row[2]),
+              errorInfo: String(row[3]),
+              details: details
+            });
+          }
+        }
+      } catch (e2) {
+        aggregateError = e2.message;
+      }
+      var report = '';
+      try { report = String(proc.processResults).replace(/\\s+$/, ''); } catch (e3) {}
+      try { proc.remove(); } catch (e4) {}
+      if (aggregateError) {
+        throw new Error("Preflight finished but its results could not be read: " + aggregateError + (report ? " (report: " + report + ")" : ""));
+      }
+      JSON.stringify({
+        profile: profile.name,
+        document: doc.name,
+        hasErrors: findings.length > 0,
+        findingCount: findings.length,
+        findings: findings,
+        processResults: report
+      });
     `;
     const response = await this.executor.execute(code);
     return formatResponse(response.result);

@@ -123,7 +123,7 @@ _11 tools_
 | `export_document` | Export the active document to a specified format (PDF, JPG, PNG, EPUB, HTML) |
 | `export_batchFolder` | Export every InDesign (.indd) file in a folder to PDF in one run — opens each document invisibly and reports per-file results |
 | `export_package` | Package the active document for print: collect fonts, linked graphics and a report into a folder. Unlike exporting, this gathers the document’s dependencies so it can be handed to a printer |
-| `export_preflight` | Run a preflight check on the active document |
+| `export_preflight` | Run a preflight profile against a document and return the problems InDesign reports, including the hierarchy it groups them in. It runs the profile named, or the first profile InDesign lists; export_package instead uses the preflight setup embedded in the document, so the two can disagree |
 | `export_getSwatches` | Get all swatches (colors, gradients, tints) from the active document |
 | `export_getFonts` | Get all fonts used in the active document |
 | `export_getMasterSpreads` | List all master spreads in the active document |

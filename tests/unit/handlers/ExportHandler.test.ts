@@ -90,17 +90,82 @@ describe('ExportHandler', () => {
   });
 
   describe('export_preflight', () => {
-    it('should call executor with preflightProcesses.add', async () => {
+    it('runs the process on the application collection, with a document and a profile', async () => {
       const mock = createMockExecutor();
-      mock.execute.mockResolvedValue({ result: { errors: [], status: 'completed' } });
+      mock.execute.mockResolvedValue({ result: { hasErrors: false, findings: [] } });
       const handler = new ExportHandler(mock as any);
 
       const tool = handler.tools.find((t) => t.name === 'export_preflight')!;
-      const result = await tool.handler({ waitForCompletion: true }, {});
+      const result = await tool.handler({}, {});
 
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('preflightProcesses.add');
+      // preflightProcesses lives on Application, and add() needs both the
+      // document and a profile; calling it on the document failed live.
+      expect(code).toContain('app.preflightProcesses.add(doc, profile)');
+      expect(code).not.toContain('__resolveDocument().preflightProcesses');
+      expect(code).toContain('app.preflightProfiles[0]');
       expect(result.content[0]).toHaveProperty('type', 'text');
+    });
+
+    it('waits for the process and reads the results the DOM actually exposes', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: { hasErrors: true, findingCount: 1, findings: [] } });
+      const handler = new ExportHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'export_preflight')!;
+      await tool.handler({ timeoutSeconds: 5 }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('proc.waitForProcess(5)');
+      expect(code).toContain('proc.aggregatedResults');
+      expect(code).toContain('proc.processResults');
+      // PreflightProcess has no start() and no errors property.
+      expect(code).not.toContain('.start()');
+      expect(code).not.toContain('process.errors');
+    });
+
+    it('resolves a named profile and lists the alternatives when it is missing', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: { hasErrors: false, findings: [] } });
+      const handler = new ExportHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'export_preflight')!;
+      await tool.handler({ profile: 'Press Ready' }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      // itemByName() cannot resolve names like "[Basic]", so the collection
+      // is searched by exact name.
+      expect(code).toContain('var wanted = "Press Ready"');
+      expect(code).toContain('String(app.preflightProfiles[p].name) === wanted');
+      expect(code).not.toContain('itemByName');
+      expect(code).toContain('Available profiles');
+      expect(code).toContain('profile.isValid');
+    });
+
+    it('reports the findings and the profile it used', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({
+        result: {
+          profile: '[Basic]',
+          document: 'layout.indd',
+          hasErrors: true,
+          findingCount: 1,
+          findings: [
+            { parentNodeID: 3, errorName: 'Text frame', pageNumber: '1', errorInfo: 'Overset', details: [] },
+          ],
+          processResults: 'Errors Found (1):',
+        },
+      });
+      const handler = new ExportHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'export_preflight')!;
+      const result = await tool.handler({}, {});
+
+      const text = (result.content[0] as any).text;
+      const parsed = JSON.parse(text);
+      expect(parsed.hasErrors).toBe(true);
+      expect(parsed.profile).toBe('[Basic]');
+      expect(parsed.findings[0].errorInfo).toBe('Overset');
     });
   });
 
