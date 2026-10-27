@@ -119,10 +119,15 @@ function writePng(path, [red, green, blue], size = 16) {
 
 const workdir = mkdtempSync(join(tmpdir(), 'indesign-dom-contracts-'));
 
+// detached, so that killing this process kills the whole group. `npx` starts
+// `tsx`, which starts node: killing the npx child alone leaves a server holding
+// the port, and the next run then talks to a server whose proxy is gone and
+// reports "bridge not connected" while everything looks fine.
 const server = spawn('npx', ['tsx', 'src/index.ts'], {
   cwd: REPO,
   env: { ...process.env, BRIDGE_PORT: PORT, LOG_LEVEL: 'error' },
   stdio: ['pipe', 'pipe', 'pipe'],
+  detached: true,
 });
 
 const pending = new Map();
@@ -212,12 +217,16 @@ async function withDocument(body, { savePath } = {}) {
 
 let proxy = null;
 function shutdown() {
-  try {
-    proxy?.kill();
-  } catch {}
-  try {
-    server.kill();
-  } catch {}
+  for (const child of [proxy, server]) {
+    if (!child?.pid) continue;
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      try {
+        child.kill();
+      } catch {}
+    }
+  }
   rmSync(workdir, { recursive: true, force: true });
 }
 
