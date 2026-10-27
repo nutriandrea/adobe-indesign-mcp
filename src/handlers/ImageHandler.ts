@@ -114,7 +114,7 @@ export class ImageHandler implements IHandler {
       JSON.stringify({
         index: img.index,
         bounds: img.geometricBounds,
-        linkStatus: img.imageLink ? img.imageLink.status : 'unknown'
+        linkStatus: __linkStatus(img.itemLink)
       });
     `;
     const response = await this.executor.execute(code);
@@ -178,8 +178,8 @@ export class ImageHandler implements IHandler {
     const escPath = this.escape(params.filePath);
     const code = `
       var img = __resolveDocument().pages[${params.pageIndex}].allGraphics[${params.itemIndex}];
-      if (!img || !img.imageLink) { throw new Error("Image or link not found"); }
-      img.imageLink.relink(File("${escPath}"));
+      if (!img || !img.itemLink) { throw new Error("Image or link not found"); }
+      img.itemLink.relink(File("${escPath}"));
       "relinked";
     `;
     const response = await this.executor.execute(code);
@@ -192,17 +192,22 @@ export class ImageHandler implements IHandler {
       itemIndex: z.number().int().min(0),
     }).parse(args as Record<string, unknown>);
 
+    // actualPpi and effectivePpi are real properties of the placed graphic.
+    // The previous version reported a hardcoded 300 for the native resolution
+    // and horizontalScale (a percentage) as the effective one, so both numbers
+    // were wrong for every image and an agent would have reasoned from them.
     const code = `
       var img = __resolveDocument().pages[${params.pageIndex}].allGraphics[${params.itemIndex}];
       if (!img) { throw new Error("Image not found"); }
-      var link = img.imageLink;
+      var link = img.itemLink;
       JSON.stringify({
         index: ${params.itemIndex},
         filePath: link ? link.filePath : 'embedded',
-        linkStatus: link ? link.status : 'embedded',
+        linkStatus: __linkStatus(link),
         bounds: img.geometricBounds,
-        effectivePpi: img.horizontalScale,
-        actualPpi: 300
+        effectivePpi: img.effectivePpi,
+        actualPpi: img.actualPpi,
+        colorSpace: img.space
       });
     `;
     const response = await this.executor.execute(code);

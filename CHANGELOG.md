@@ -27,6 +27,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a copy of the document.
 
 ### Fixed
+- **The image and link tools called DOM members that do not exist.** Four of
+  them failed outright, and one reported numbers it had invented:
+  - `Image.imageLink` is not a property. The source file of a placed graphic is
+    `Image.itemLink`, so `image_place`, `image_relink`, `image_info` and
+    `image_getLinks` threw after the work was already done — `image_place`
+    placed the graphic and *then* failed reading it back, which made a
+    successful place look like a failed one.
+  - `Link.embedded` is not a property either, so `resources_listLinks`,
+    `resources_getLinkInfo` and `image_getLinks` failed on **every** document
+    that had a link at all. Embedding is signalled by the link's status
+    (`LINK_EMBEDDED`); `Link.needed` is false for ordinary linked files too, so
+    it cannot stand in, and a shared `__isEmbedded` helper now answers the
+    question from the status.
+  - `Link.embed()` is not a method. The DOM embeds a file with `link.unlink()`,
+    which is what `resources_embedLink` calls now, and it reports the status it
+    read back instead of asserting `embedded: true`.
+  - `resources_unembedLink` passed a `File` to `unembed()`, which takes the
+    *Folder* to copy the unembedded file into. The parameter is now an optional
+    `folderPath`; without it the link goes back to its original source, which
+    is the behaviour most callers wanted and the only one that needs no guess.
+  - `resources_updateAllLinks` called `everyItem().relink()`, which throws
+    `Parametro richiesto "to" mancante`: `relink()` needs a path that a bulk
+    call cannot invent. It now updates the links whose source changed and
+    reports the missing ones by name, so the caller can relink them explicitly.
+  - `image_info` reported `actualPpi: 300` as a constant and `horizontalScale`
+    (a percentage) as `effectivePpi`. It reads the graphic's real `actualPpi`
+    and `effectivePpi`, and the colour space, instead of making numbers up.
+  - `Link.status` is a numeric enum, so `JSON.stringify` turned every reported
+    status into `{}`. A shared `__linkStatus` helper maps all five `LinkStatus`
+    members to words (`normal`, `link_missing`, …), and the tools use it.
+  Verified live against InDesign 2026 on macOS on throwaway documents: 14/14
+  checks for the image tools (including a deleted source reported as
+  `link_missing`) and 23/23 for the link tools (embed → unembed → a source
+  edited on disk reported as `link_out_of_date` and updated → a source deleted
+  reported as missing rather than silently "updated").
 - **The Windows COM bridge mangled every non-ASCII character.**
   `run_jsx_persistent.vbs` read the `.jsx` that `ComScriptExecutor` writes as
   UTF-8 through `FileSystemObject.OpenTextFile`, which decodes in the system

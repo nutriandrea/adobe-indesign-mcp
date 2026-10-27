@@ -63,8 +63,13 @@ describe('ResourcesHandler', () => {
       expect(code).toContain('__resolveDocument().links');
       expect(code).toContain('l.name');
       expect(code).toContain('l.filePath');
-      expect(code).toContain('l.status');
-      expect(code).toContain('l.embedded');
+      // A raw enum serialises to {}, so the code must name the status through
+      // the shared mapper instead of passing l.status straight through.
+      expect(code).toContain('__linkStatus(l)');
+      expect(code).not.toContain('l.status');
+      expect(code).toContain('__isEmbedded(l)');
+      // Link.embedded does not exist; reading it made this tool fail live.
+      expect(code).not.toContain('l.embedded');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
 
@@ -122,9 +127,11 @@ describe('ResourcesHandler', () => {
   });
 
   describe('resources_updateAllLinks', () => {
-    it('should call executor with everyItem().relink() code', async () => {
+    it('should update out-of-date links and report the ones it cannot fix', async () => {
       const mock = createMockExecutor();
-      mock.execute.mockResolvedValue({ result: 'all links updated' });
+      mock.execute.mockResolvedValue({
+        result: { total: 3, updated: ['a.jpg'], missing: ['b.jpg'], inaccessible: [], failed: [] },
+      });
       const handler = new ResourcesHandler(mock as any);
 
       const tool = handler.tools.find((t) => t.name === 'resources_updateAllLinks')!;
@@ -132,13 +139,17 @@ describe('ResourcesHandler', () => {
 
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
-      expect(code).toContain('everyItem().relink()');
+      // everyItem().relink() fails live: relink() requires a target path.
+      expect(code).not.toContain('everyItem().relink()');
+      expect(code).toContain('link.update()');
+      expect(code).toContain('missing.push');
+      expect(code).toContain('__linkStatus(link)');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
   });
 
   describe('resources_embedLink', () => {
-    it('should call executor with embed() code for the given link index', async () => {
+    it('should call executor with unlink() code for the given link index', async () => {
       const mock = createMockExecutor();
       mock.execute.mockResolvedValue({ result: { name: 'img1.jpg', embedded: true } });
       const handler = new ResourcesHandler(mock as any);
@@ -149,7 +160,10 @@ describe('ResourcesHandler', () => {
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('links[2]');
-      expect(code).toContain('embed()');
+      expect(code).toContain('link.unlink()');
+      // Link.embed() does not exist in the DOM.
+      expect(code).not.toContain('link.embed()');
+      expect(code).toContain('__isEmbedded(link)');
       expect(code).toContain('link.isValid');
       expect(result.content[0]).toHaveProperty('type', 'text');
     });
@@ -176,14 +190,28 @@ describe('ResourcesHandler', () => {
       const handler = new ResourcesHandler(mock as any);
 
       const tool = handler.tools.find((t) => t.name === 'resources_unembedLink')!;
-      const result = await tool.handler({ linkIndex: 1, filePath: '/path/to/output.pdf' }, {});
+      const result = await tool.handler({ linkIndex: 1, folderPath: '/path/to/output' }, {});
 
       expect(mock.execute).toHaveBeenCalledTimes(1);
       const code = mock.execute.mock.calls[0][0] as string;
       expect(code).toContain('links[1]');
-      expect(code).toContain('unembed(File("/path/to/output.pdf"))');
+      // unembed() copies into a Folder; passing a File was meaningless.
+      expect(code).toContain('unembed(Folder("/path/to/output"))');
       expect(code).toContain('link.isValid');
       expect(result.content[0]).toHaveProperty('type', 'text');
+    });
+
+    it('links back to the original source when no folder is given', async () => {
+      const mock = createMockExecutor();
+      mock.execute.mockResolvedValue({ result: { name: 'img1.jpg', embedded: false } });
+      const handler = new ResourcesHandler(mock as any);
+
+      const tool = handler.tools.find((t) => t.name === 'resources_unembedLink')!;
+      await tool.handler({ linkIndex: 1 }, {});
+
+      const code = mock.execute.mock.calls[0][0] as string;
+      expect(code).toContain('link.unembed();');
+      expect(code).not.toContain('Folder(');
     });
 
     it('should return embedded false in response', async () => {
@@ -192,7 +220,7 @@ describe('ResourcesHandler', () => {
       const handler = new ResourcesHandler(mock as any);
 
       const tool = handler.tools.find((t) => t.name === 'resources_unembedLink')!;
-      const result = await tool.handler({ linkIndex: 1, filePath: '/path/to/output.pdf' }, {});
+      const result = await tool.handler({ linkIndex: 1 }, {});
 
       const text = result.content[0] as any;
       const parsed = JSON.parse(text.text);
@@ -247,7 +275,7 @@ describe('path hardening', () => {
     const handler = new ResourcesHandler(executor as any);
     const tool = handler.tools.find((t) => t.name === 'resources_unembedLink')!;
     for (const bad of ['../../etc/passwd', '/etc/hosts', 'C:\\Windows\\System32\\x.png']) {
-      const res = await tool.handler({ filePath: bad, linkIndex: 0, ...{} });
+      const res = await tool.handler({ folderPath: bad, linkIndex: 0, ...{} });
       expect(res.isError, `expected isError for ${bad}`).toBe(true);
       expect(executor.execute, `executor must not run for ${bad}`).not.toHaveBeenCalled();
     }

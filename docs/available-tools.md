@@ -176,9 +176,9 @@ _6 tools_
 |------|-------------|
 | `resources_listLinks` | List all document links with status and file path |
 | `resources_updateLink` | Update/relink a specific link by index to a new file |
-| `resources_updateAllLinks` | Re-establish all broken/modified links |
+| `resources_updateAllLinks` | Update every link whose source file changed, and report the ones that need an explicit relink |
 | `resources_embedLink` | Embed a linked file into the document |
-| `resources_unembedLink` | Unembed a file and save as linked resource |
+| `resources_unembedLink` | Unembed a file, copying it into a folder if one is given |
 | `resources_getLinkInfo` | Get detailed status for a specific link |
 
 ## Book

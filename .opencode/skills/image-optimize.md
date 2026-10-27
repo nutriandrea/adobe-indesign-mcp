@@ -119,7 +119,7 @@ for (var i = 0; i < app.activeDocument.links.length; i++) {
 
 ### Best practice link
 - **Preferisci link** (non embedding): mantiene il documento leggero
-- **Embedding**: solo per condivisione/archiviazione (usa `resource_embedLink`)
+- **Embedding**: solo per condivisione/archiviazione (usa `resources_embedLink`)
 - **Immagini collegate**: tieni in cartella `_images/` vicino al documento
 
 ## Step 5: Esporta con immagini ottimizzate
