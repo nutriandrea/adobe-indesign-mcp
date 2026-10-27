@@ -147,3 +147,20 @@ export const preflightSchema = z.object({
     .default(30)
     .describe('How long to wait for the preflight process before reading what it has found'),
 });
+
+export const typographyAuditSchema = z.object({
+  maxParagraphs: z
+    .number()
+    .int()
+    .positive()
+    .max(500000)
+    .default(50000)
+    .describe('Stop after this many paragraphs and report truncated: true, rather than run for minutes'),
+  samplesPerFinding: z
+    .number()
+    .int()
+    .min(0)
+    .max(20)
+    .default(3)
+    .describe('How many example paragraphs to include per finding, each with its page'),
+});

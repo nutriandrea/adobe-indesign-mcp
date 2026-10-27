@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = process.env.SMOKE_PORT || '8133';
 const APP = process.env.INDESIGN_APP || 'Adobe InDesign 2026';
-const EXPECTED_TOOLS = 198;
+const EXPECTED_TOOLS = 199;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

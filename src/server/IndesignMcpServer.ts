@@ -34,6 +34,7 @@ import { TableStyleHandler } from '../handlers/TableStyleHandler.js';
 import { SectionHandler } from '../handlers/SectionHandler.js';
 import { ColorHandler } from '../handlers/ColorHandler.js';
 import { FontHandler } from '../handlers/FontHandler.js';
+import { TypographyHandler } from '../handlers/TypographyHandler.js';
 import { ImageHandler } from '../handlers/ImageHandler.js';
 import { LayerHandler } from '../handlers/LayerHandler.js';
 import { ShapeHandler } from '../handlers/ShapeHandler.js';
@@ -112,6 +113,7 @@ export class IndesignMcpServer {
       new SectionHandler(this.executor),
       new ColorHandler(this.executor),
       new FontHandler(this.executor),
+      new TypographyHandler(this.executor),
       new ImageHandler(this.executor),
       new LayerHandler(this.executor),
       new ShapeHandler(this.executor),

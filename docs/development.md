@@ -38,7 +38,7 @@ want for development.
 | `npm run verify:tool-counts` | fails if any advertised tool count drifts from the registry |
 | `npm run docs:tools` | regenerates `docs/available-tools.md` from the registry |
 | `npm run verify:docs` | fails if `docs/available-tools.md` is stale |
-| `npm run verify:pack` | build → `npm pack` → install the tarball → boot it and assert 198 tools |
+| `npm run verify:pack` | build → `npm pack` → install the tarball → boot it and assert 199 tools |
 | `npm run server:json` | regenerates `server.json` (the MCP Registry manifest) from `package.json` |
 | `npm run verify:server-json` | fails if `server.json` is stale |
 | `npm run build:mcpb` | packs `dist-mcpb/indesign-nutria-mcp-<version>.mcpb` (MCP Bundle, ~10 MB) |
@@ -46,7 +46,7 @@ want for development.
 | `npm run verify` | `lint` + `verify:tool-counts` + `verify:tool-names` + `verify:docs` + `verify:server-json` + `test` (the CI gate) |
 | `npm run smoke:macos` | the live four-process smoke test (needs a running InDesign) |
 | `npm run smoke:recipes` | the live gate for the two recipes (needs a running InDesign) |
-| `npm run smoke:dom` | the live gate for images, links and preflight (needs a running InDesign) |
+| `npm run smoke:dom` | the live gate for images, links, preflight and the typography audit (needs a running InDesign) |
 | `npm run smoke:target` | the live gate for `document_id` (needs a running InDesign) |
 
 ## Test layout
@@ -124,7 +124,7 @@ What it does:
 1. boots the server on a **non-default port** (`SMOKE_PORT`, default `8131`) so
    it never fights a bridge you already have running;
 2. checks `initialize` advertises the workflow contract and `tools/list`
-   returns 198 tools;
+   returns 199 tools;
 3. starts `bridge-proxy.mjs` and waits for `mcp://bridge/status` to report
    connected;
 4. creates a document, adds a text frame, reads it back, calls
@@ -174,7 +174,7 @@ defects. `Image.imageLink`, `Link.embedded`, `Link.embed()` and
 `Document.preflightProcesses` all read like documented API and none of them
 exist, so six tools failed on every document while the suite stayed green.
 
-`smoke:dom` is those failures written as assertions: 48 of them, in three
+`smoke:dom` is those failures written as assertions: 67 of them, in four
 sections, each in a throwaway document that is closed without saving.
 
 - **Images** — a place completes and reports the status it read, `image_list`
@@ -194,6 +194,13 @@ sections, each in a throwaway document that is closed without saving.
   profile fails and lists the profiles that exist, and no preflight process is
   left behind. Packaging is checked in the same document: the report has to
   match what is on disk, and a refusal may not also carry a copy count.
+- **Typography** — a font reports the status it carries, a paragraph style
+  reports how many paragraphs use it and how many of those carry a local
+  override (with the page to find them on), an override's own size appears as
+  its own size/leading pair, auto leading is reported as `auto` rather than as
+  a number, and text with no paragraph style at all is counted and sampled. The
+  run ends by saving the document and auditing it twice: if the audit wrote
+  anything, InDesign's `modified` flag comes back true.
 
 It generates its own PNG sources, uses bridge port `8137` so it cannot collide
 with the main bridge on `8120`, and exits **0 with a SKIP notice** when InDesign
@@ -252,7 +259,7 @@ Four scripts guard the things that go stale silently:
   with the package with a generic "package validation failed", so this is the
   cheap place to catch it.
 - **`verify:pack`** packs the tarball, installs it into a temp dir, boots the
-  packed entry point over stdio, and asserts it advertises 198 tools — the check
+  packed entry point over stdio, and asserts it advertises 199 tools — the check
   that catches a `files` allowlist shipping `start-bridge.sh` without the
   `bridge-proxy.mjs` it execs. It also asserts those runtime files are present by
   name, because a handshake alone would not notice: the server only reaches for
@@ -295,7 +302,7 @@ Two facts to know before touching them:
 own output: it re-opens the finished archive, asserts `manifest.json` is at the
 root, asserts `assets/windows/run_jsx_persistent.vbs` is where the Windows path
 reaches for it, and boots the server inside the archive to confirm it answers
-`initialize` with the workflow contract and 198 tools. It also prints the
+`initialize` with the workflow contract and 199 tools. It also prints the
 SHA-256 of the artifact, which a future `registryType: "mcpb"` entry in
 `server.json` would need. The archive is deliberately not byte-reproducible —
 `npm install` writes metadata — so the hash is of the uploaded artifact, not of

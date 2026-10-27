@@ -143,8 +143,8 @@ try {
   }
 
   const booted = await bootFromBundle(join(checkDir, manifest.server.entry_point), checkDir);
-  if (booted.tools !== 198) {
-    console.error(`build:mcpb: the bundled server advertises ${booted.tools} tools, expected 198`);
+  if (booted.tools !== 199) {
+    console.error(`build:mcpb: the bundled server advertises ${booted.tools} tools, expected 199`);
     process.exit(1);
   }
   if (!booted.instructions) {
