@@ -157,7 +157,7 @@ export class PreviewHandler implements IHandler {
       return this.io.readFile(tempPath);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`preview failed: the exported file was not readable (${message})`);
+      throw new Error(`preview failed: the exported file was not readable (${message})`, { cause: err });
     }
   }
 }

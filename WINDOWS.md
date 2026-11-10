@@ -12,7 +12,7 @@ Tool required. Requires InDesign to be **running** on the same machine.
 
 1. Enable it before starting the server:
    ```powershell
-   set COM_BRIDGE_ENABLED=true
+   $env:COM_BRIDGE_ENABLED = 'true'
    node dist\index.js
    ```
 2. Optional overrides: `COM_BRIDGE_CSCRIPT_PATH`, `COM_BRIDGE_VBS_PATH`
@@ -64,6 +64,73 @@ B as *shipped, exercised once elsewhere, not covered by a smoke suite*:
 
 If you run Option B on a real Windows host, the thing still worth reporting is
 whether a wedged script can be recovered without restarting InDesign.
+
+## Reproduce the UTF-8 check for issue #48
+
+Run these steps in PowerShell from this checkout. You need Node.js 22.13+ (or 24+), Git,
+and a licensed Adobe InDesign installation. Open InDesign first and dismiss any
+startup dialogs. The probe creates one unsaved document and leaves it open for
+visual inspection; it does not edit or close existing documents.
+
+1. Install and build, then run the bridge regression tests:
+
+   ```powershell
+   npm ci
+   npm run build
+   npx vitest run tests/unit/ComScriptExecutor.test.ts tests/unit/comBridgeScript.test.ts
+   ```
+
+2. Exercise the actual shipped VBScript reader and InDesign COM connection.
+   Paste the entire block below into PowerShell. It writes the same UTF-8 bytes
+   as the executor, then sends the file path to the persistent bridge. Checking
+   numeric character codes inside InDesign avoids the false positive where ANSI
+   corruption on stdout reverses the corruption on input.
+
+   ```powershell
+   $probe = [System.IO.Path]::GetTempFileName()
+   $jsx = @'
+   (function () {
+       var doc = app.documents.add();
+       var frame = doc.pages[0].textFrames.add();
+       frame.geometricBounds = [20, 20, 100, 180];
+       frame.contents = "Grüße aus Köln, 9,99 €";
+       var text = frame.contents;
+       var codes = [];
+       for (var i = 0; i < text.length; i++) codes.push(text.charCodeAt(i));
+       return '{"length":' + text.length + ',"codes":[' + codes.join(',') + ']}';
+   }());
+   '@
+   try {
+       [System.IO.File]::WriteAllText($probe, $jsx, [System.Text.UTF8Encoding]::new($false))
+       $output = $probe | & cscript.exe //nologo .\assets\windows\run_jsx_persistent.vbs
+       if ($LASTEXITCODE -ne 0) { throw "cscript failed: $output" }
+       $result = $output | ConvertFrom-Json
+       $expected = '71,114,252,223,101,32,97,117,115,32,75,246,108,110,44,32,57,44,57,57,32,8364'
+       if ($result.length -ne 22 -or ($result.codes -join ',') -ne $expected) {
+           throw "Unicode mismatch: $output"
+       }
+       Write-Host 'PASS: InDesign received the exact Unicode character codes.'
+   } finally {
+       Remove-Item -LiteralPath $probe
+   }
+   ```
+
+3. Inspect the new document in InDesign. The frame must show
+   **Grüße aus Köln, 9,99 €**, without `GrÃ¼ÃŸe` or `â‚¬`. Export a PDF through
+   InDesign and inspect it too; use a font containing the required glyphs.
+   Close only the probe document without saving when finished.
+
+4. To verify the MCP route as well, configure your MCP client to launch
+   `node` with the absolute path to `dist/index.js` and environment
+   `COM_BRIDGE_ENABLED=true`. Restart the client/server after updating the
+   checkout so it cannot reuse an older persistent bridge. Ask it to create a
+   new document and use `text_addFrame` with the same text, then `text_setContent`
+   with that text again. Inspect the document and exported PDF, rather than
+   relying only on `text_getTextFrames` output.
+
+These live Windows steps are manual and have not been executed in the Linux
+development environment. Report the commit, Windows and InDesign versions,
+probe output, and visual/PDF result when recording a live run.
 
 Credits: COM approach pioneered by [@graydini](https://github.com/graydini)
 in PR #1; this implementation keeps the macOS default path untouched by being

@@ -87,6 +87,22 @@ describe('ComScriptExecutor', () => {
     expect(r2.result).toBe('"two"');
   });
 
+  it('preserves the German text from issue #48 in UTF-8 scripts and escaped results', async () => {
+    const text = 'Grüße aus Köln, 9,99 €';
+    const p = executor.execute(`var content = ${JSON.stringify(text)}; content;`);
+    const [path, content, encoding] = mockWriteFileSync.mock.calls[0];
+    expect(encoding).toBe('utf-8');
+    expect(content).toContain(JSON.stringify(text));
+    expect(child.stdin.write).toHaveBeenCalledWith(`${path}\n`);
+
+    // The VBS escapes non-ASCII UTF-16 code units before writing ANSI stdout.
+    // Split an escape between chunks to exercise the real pipe framing too.
+    child.stdout.emit('data', Buffer.from('"Gr\\u00FC\\u00DFe aus K\\u00'));
+    child.stdout.emit('data', Buffer.from('F6ln, 9,99 \\u20AC"\r\n'));
+    const response = await p;
+    expect(JSON.parse(response.result as string)).toBe(text);
+  });
+
   it('rejects with InDesignError when the bridge answers "ERROR: ..."', async () => {
     const p = executor.execute('boom;');
     child.stdout.emit('data', Buffer.from('ERROR: Object required\n'));

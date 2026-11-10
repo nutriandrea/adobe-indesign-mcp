@@ -105,7 +105,7 @@ export class ColorHandler implements IHandler {
 
     const escName = this.escape(params.name);
 
-    let colorCode = '';
+    let colorCode: string;
     if (params.model === 'cmyk') {
       const spaceVal = params.colorType === 'spot' ? 'SpotColor' : 'ProcessColor';
       colorCode = `

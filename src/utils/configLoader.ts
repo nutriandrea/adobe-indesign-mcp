@@ -14,6 +14,7 @@ import { z } from 'zod';
  */
 export const SERVER_VERSION = '1.6.1';
 
+// Zod 4 defaults bypass parsing; prefault keeps nested field defaults applied.
 const configSchema = z.object({
   bridge: z
     .object({
@@ -22,7 +23,7 @@ const configSchema = z.object({
       maxPayload: z.number().int().positive().default(1048576),
       timeout: z.number().int().positive().default(30000),
     })
-    .default({}),
+    .prefault({}),
   httpBridge: z
     .object({
       enabled: z.boolean().default(false),
@@ -30,26 +31,26 @@ const configSchema = z.object({
       host: z.string().default('127.0.0.1'),
       token: z.string().default(''),
     })
-    .default({}),
+    .prefault({}),
   server: z
     .object({
       transport: z.enum(['stdio', 'websocket']).default('stdio'),
       name: z.string().default('indesign-nutria-mcp'),
       version: z.string().default(SERVER_VERSION),
     })
-    .default({}),
+    .prefault({}),
   logging: z
     .object({
       level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     })
-    .default({}),
+    .prefault({}),
   comBridge: z
     .object({
       enabled: z.boolean().default(false),
       cscriptPath: z.string().optional(),
       vbsPath: z.string().optional(),
     })
-    .default({}),
+    .prefault({}),
   responseEnvelope: z
     .object({
       // Off by default. Turning it on makes every *successful* tool result an
@@ -58,7 +59,7 @@ const configSchema = z.object({
       // for one release before the shape becomes the default.
       success: z.boolean().default(false),
     })
-    .default({}),
+    .prefault({}),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

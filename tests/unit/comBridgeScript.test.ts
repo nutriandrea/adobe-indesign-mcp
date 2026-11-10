@@ -21,6 +21,9 @@ describe('assets/windows/run_jsx_persistent.vbs', () => {
     // page, so "Yayınları" written as UTF-8 reached InDesign as "YayÄ±nlarÄ±".
     expect(source).toContain('CreateObject("ADODB.Stream")');
     expect(source).toMatch(/\.Charset = "utf-8"/i);
+    expect(source).toContain('jsxText = ReadUtf8(line)');
+    expect(source).toContain('stm.LoadFromFile path');
+    expect(source).toContain('ReadUtf8 = stm.ReadText(-1)');
     // The header comment may name the old API; the call must be gone.
     expect(source).not.toMatch(/OpenTextFile\(/);
   });

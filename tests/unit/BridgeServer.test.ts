@@ -18,10 +18,12 @@ const { mockHttpCreateServer, mockHttpServerListen, mockHttpServerClose } = vi.h
 
 const { mockWssOn, mockWebSocketServer } = vi.hoisted(() => {
   const mockWssOn = vi.fn();
-  const mockWebSocketServer = vi.fn().mockImplementation(() => ({
-    on: mockWssOn,
-    close: vi.fn(),
-  }));
+  const mockWebSocketServer = vi.fn().mockImplementation(function () {
+    return {
+      on: mockWssOn,
+      close: vi.fn(),
+    };
+  });
   return { mockWssOn, mockWebSocketServer };
 });
 

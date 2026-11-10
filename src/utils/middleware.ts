@@ -1,3 +1,4 @@
+import { ZodError } from 'zod';
 import type { Middleware, ToolResult } from '../types/index.js';
 import { logger } from './logger.js';
 import { InDesignError } from './errorHandler.js';
@@ -31,7 +32,7 @@ export function withErrorHandling(): Middleware {
         // more precisely than the message text can, so pass them through.
         const envelope = toErrorEnvelope({
           message,
-          code: err instanceof InDesignError ? err.code : undefined,
+          code: err instanceof ZodError ? 'VALIDATION_ERROR' : err instanceof InDesignError ? err.code : undefined,
         });
         return {
           content: [{ type: 'text', text: JSON.stringify(envelope) }],

@@ -586,7 +586,10 @@ describe('export_document format honesty', () => {
 
     const res = await tool.handler({ format: 'package' });
     expect(res.isError).toBe(true);
-    expect(JSON.stringify(res.content)).toContain('invalid_enum_value');
+    expect(JSON.parse(res.content[0].text as string)).toMatchObject({
+      ok: false, code: 'invalid_arguments',
+    });
+    expect(JSON.stringify(res.content)).toContain('invalid_value');
     expect(executor.execute).not.toHaveBeenCalled();
   });
 

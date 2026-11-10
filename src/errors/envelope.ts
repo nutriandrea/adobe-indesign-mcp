@@ -155,6 +155,7 @@ const RULES: readonly Rule[] = [
 
 /** Maps the bridge's own transport codes onto envelope codes. */
 const ERROR_CODE_MAP: Record<string, InDesignErrorCode> = {
+  VALIDATION_ERROR: 'invalid_arguments',
   EXECUTION_TIMEOUT: 'execution_timeout',
   CANCELLED: 'execution_cancelled',
   BRIDGE_ERROR: 'bridge_error',
