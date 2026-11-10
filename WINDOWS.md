@@ -67,7 +67,7 @@ whether a wedged script can be recovered without restarting InDesign.
 
 ## Reproduce the UTF-8 check for issue #48
 
-Run these steps in PowerShell from this checkout. You need Node.js 18+, Git,
+Run these steps in PowerShell from this checkout. You need Node.js 22.13+ (or 24+), Git,
 and a licensed Adobe InDesign installation. Open InDesign first and dismiss any
 startup dialogs. The probe creates one unsaved document and leaves it open for
 visual inspection; it does not edit or close existing documents.

@@ -9,35 +9,43 @@ import {
 import type { AppConfig } from '../../src/utils/configLoader.js';
 
 vi.mock('../../src/bridge/ExpressBridgeServer.js', () => ({
-  ExpressBridgeServer: vi.fn(() => ({
-    start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue(undefined),
-    getApp: vi.fn(() => ({})),
-  })),
+  ExpressBridgeServer: vi.fn(function () {
+    return {
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      getApp: vi.fn(() => ({})),
+    };
+  }),
 }));
 
 vi.mock('../../src/bridge/ScriptExecutor.js', () => ({
-  ScriptExecutor: vi.fn(() => ({
-    execute: vi.fn().mockResolvedValue({ success: true, data: null }),
-    cancelAll: vi.fn(),
-    getStatus: vi.fn().mockReturnValue({}),
-  })),
+  ScriptExecutor: vi.fn(function () {
+    return {
+      execute: vi.fn().mockResolvedValue({ success: true, data: null }),
+      cancelAll: vi.fn(),
+      getStatus: vi.fn().mockReturnValue({}),
+    };
+  }),
 }));
 
 vi.mock('../../src/bridge/BridgeServer.js', () => ({
-  BridgeServer: vi.fn(() => ({
-    start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue(undefined),
-    events: { on: vi.fn() },
-  })),
+  BridgeServer: vi.fn(function () {
+    return {
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      events: { on: vi.fn() },
+    };
+  }),
 }));
 
 vi.mock('../../src/bridge/ComScriptExecutor.js', () => ({
-  ComScriptExecutor: vi.fn(() => ({
-    execute: vi.fn().mockResolvedValue({ success: true, data: null }),
-    cancelAll: vi.fn(),
-    getStatus: vi.fn().mockReturnValue({}),
-  })),
+  ComScriptExecutor: vi.fn(function () {
+    return {
+      execute: vi.fn().mockResolvedValue({ success: true, data: null }),
+      cancelAll: vi.fn(),
+      getStatus: vi.fn().mockReturnValue({}),
+    };
+  }),
 }));
 
 const mockConfig: AppConfig = {

@@ -24,7 +24,7 @@
   <a href="#"><img src="https://img.shields.io/badge/tools-199-7c3aed?style=flat" alt="tools"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-1131-22c55e?style=flat" alt="tests"></a>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg"><img src="https://github.com/nutriandrea/adobe-indesign-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat&logo=node.js" alt="node"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22.13-339933?style=flat&logo=node.js" alt="node"></a>
   <a href="https://www.adobe.com/products/indesign.html"><img src="https://img.shields.io/badge/InDesign-2022%2B-007396?style=flat&logo=adobe" alt="indesign"></a>
 </p>
 
@@ -557,7 +557,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 | Requirement | Version |
 |-------------|---------|
 | **Adobe InDesign** | 2022+ (2024/2025/2026 recommended) |
-| **Node.js** | 18+ |
+| **Node.js** | 22.13+ (or 24+) |
 | **OS** | macOS or Windows (Linux can run the MCP server, but no InDesign automation path exists there) |
 
 ---

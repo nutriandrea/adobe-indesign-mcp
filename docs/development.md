@@ -5,11 +5,16 @@ together, read [architecture.md](architecture.md) first.
 
 ## Prerequisites
 
-- **Node.js 18+** (CI runs the 18 / 20 / 22 matrix)
+- **Node.js 22.x >=22.13, or >=24** (CI runs the 22 / 24 / 26 matrix)
 - **Adobe InDesign** installed — only needed for the live smoke test; the unit
   suite runs without it
 - **macOS or Windows** for InDesign automation (the server and its tests run
   anywhere, including Linux CI)
+
+TypeScript stays on `~6.0.3`: the latest TypeScript 7 is outside the supported
+peer range of `@typescript-eslint/parser` (`>=4.8.4 <6.1.0`). Do not bypass
+this constraint with `--force` or `--legacy-peer-deps`. UUID includes its own
+types, so `@types/uuid` is no longer needed. ESLint uses `eslint.config.js`.
 
 ## Getting started
 

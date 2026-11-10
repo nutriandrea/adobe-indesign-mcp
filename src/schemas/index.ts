@@ -79,7 +79,7 @@ export const placeFileSchema = z.object({
 export const exportDocumentSchema = z.object({
   format: z.enum(['pdf', 'epub', 'html', 'jpg', 'png']),
   filePath: z.string().optional(),
-  options: z.record(z.unknown()).optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

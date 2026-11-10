@@ -48,7 +48,7 @@ export class StyleHandler implements IHandler {
           leading: z.number().positive().optional(),
           spaceBefore: z.number().min(0).optional(),
           spaceAfter: z.number().min(0).optional(),
-          properties: z.record(z.unknown()).optional(),
+          properties: z.record(z.string(), z.unknown()).optional(),
         },
         handler: compose(withLogging('style_createParagraph'), withErrorHandling())(this.createParagraph.bind(this)),
       },
@@ -62,7 +62,7 @@ export class StyleHandler implements IHandler {
           fontFamily: z.string().optional(),
           fontStyle: z.string().optional(),
           color: z.string().optional(),
-          properties: z.record(z.unknown()).optional(),
+          properties: z.record(z.string(), z.unknown()).optional(),
         },
         handler: compose(withLogging('style_createCharacter'), withErrorHandling())(this.createCharacter.bind(this)),
       },
@@ -173,7 +173,7 @@ export class StyleHandler implements IHandler {
       leading: z.number().positive().optional(),
       spaceBefore: z.number().min(0).optional(),
       spaceAfter: z.number().min(0).optional(),
-      properties: z.record(z.unknown()).optional(),
+      properties: z.record(z.string(), z.unknown()).optional(),
     }).parse(args as Record<string, unknown>);
     const escName = this.escape(params.name);
     const props: string[] = [`name: "${escName}"`];
@@ -207,7 +207,7 @@ export class StyleHandler implements IHandler {
       fontFamily: z.string().optional(),
       fontStyle: z.string().optional(),
       color: z.string().optional(),
-      properties: z.record(z.unknown()).optional(),
+      properties: z.record(z.string(), z.unknown()).optional(),
     }).parse(args as Record<string, unknown>);
     const escName = this.escape(params.name);
     const props: string[] = [`name: "${escName}"`];
