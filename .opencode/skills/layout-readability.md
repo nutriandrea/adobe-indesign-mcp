@@ -21,12 +21,12 @@ Validare automaticamente che il layout di una pagina InDesign sia leggibile, bil
 
 Per OGNI pagina modificata, verifica ciascun punto:
 
-### 1. Sovrapposizioni illeggibili ❌
+### 1. Sovrapposizioni illeggibili [Issue]
 
 ```
-❌ Testo su sfondo colorato senza contrasto sufficiente
+[Issue] Testo su sfondo colorato senza contrasto sufficiente
    → Esempio: testo nero su rosso scuro, testo bianco su giallo chiaro
-✅ Testo con contrasto ≥ 3:1 (ideale ≥ 4.5:1)
+[OK] Testo con contrasto ≥ 3:1 (ideale ≥ 4.5:1)
 ```
 
 **Come verificare (via pixel analysis):**
@@ -36,12 +36,12 @@ Per OGNI pagina modificata, verifica ciascun punto:
 # Se < 3:1 → SEGNALA
 ```
 
-### 2. Andate a capo innaturali ❌
+### 2. Andate a capo innaturali [Issue]
 
 ```
-❌ "PORTFO-\nLIO" invece di "PORTFOLIO" su una riga
-❌ "ANDREA\nCACIOPPO" se lo spazio permette di stare in una riga
-❌ Una singola parola che va a capo da sola (orfana)
+[Issue] "PORTFO-\nLIO" invece di "PORTFOLIO" su una riga
+[Issue] "ANDREA\nCACIOPPO" se lo spazio permette di stare in una riga
+[Issue] Una singola parola che va a capo da sola (orfana)
 ```
 
 **Regole:**
@@ -50,7 +50,7 @@ Per OGNI pagina modificata, verifica ciascun punto:
 - Se il testo va a capo, verifica che ogni spezzone sia bilanciato
 - Eccezione: se l'andata a capo fa PARTE dello stile (es. Futurismo), documentalo
 
-### 3. Contrasto colore ❌
+### 3. Contrasto colore [Issue]
 
 Calcola per ogni testo:
 - **Testo normale**: rapporto ≥ 4.5:1
@@ -70,13 +70,13 @@ def contrast_ratio(l1, l2):
     return (lighter + 0.05) / (darker + 0.05)
 ```
 
-### 4. Gerarchia Visiva ❌
+### 4. Gerarchia Visiva [Issue]
 
 ```
-❌ Titolo più piccolo del sottotitolo
-❌ Elementi di pari importanza con dimensioni molto diverse
-❌ Testo corpo più grande del titolo
-❌ Mancanza di gerarchia (tutto uguale)
+[Issue] Titolo più piccolo del sottotitolo
+[Issue] Elementi di pari importanza con dimensioni molto diverse
+[Issue] Testo corpo più grande del titolo
+[Issue] Mancanza di gerarchia (tutto uguale)
 ```
 
 **Verifica:**
@@ -84,12 +84,12 @@ def contrast_ratio(l1, l2):
 - Verifica che la differenza di dimensione sia percettibile (≥ 4pt di gap)
 - Il peso (Bold vs Regular) deve essere coerente col ruolo
 
-### 5. Margini e Spaziature ❌
+### 5. Margini e Spaziature [Issue]
 
 ```
-❌ Testo attaccato al bordo della pagina
-❌ Elementi a distanza irregolare tra loro
-❌ Margini inconsistenti tra sinistra e destra (se stile simmetrico)
+[Issue] Testo attaccato al bordo della pagina
+[Issue] Elementi a distanza irregolare tra loro
+[Issue] Margini inconsistenti tra sinistra e destra (se stile simmetrico)
 ```
 
 **Verifica:**
@@ -97,11 +97,11 @@ def contrast_ratio(l1, l2):
 - Elementi raggruppati visivamente devono avere spaziatura ≤ 3mm
 - Elementi separati devono avere spaziatura ≥ 5mm
 
-### 6. Elementi fuori pagina ❌
+### 6. Elementi fuori pagina [Issue]
 
 ```
-❌ Forme, linee o testo che si estendono oltre il bordo pagina senza bleed
-❌ Testo troncato dal bordo della pagina
+[Issue] Forme, linee o testo che si estendono oltre il bordo pagina senza bleed
+[Issue] Testo troncato dal bordo della pagina
 ```
 
 **Verifica:**

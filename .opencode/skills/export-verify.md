@@ -122,11 +122,11 @@ Questo rivela se il testo è presente anche se non visibile a bassa risoluzione.
 
 | Condizione | Esito |
 |-----------|-------|
-| Tutti i pixel campionati corrispondono (±30 per canale) | ✅ PASS |
-| Colori corretti ma testo non campionato correttamente | ✅ PASS (se pdftotext conferma presenza testo) |
-| 1-2 elementi con colore leggermente fuori tolleranza (±40) | ⚠️ WARN (documenta, procedi) |
-| Testo invisibile O sovrapposizioni illeggibili | ❌ FAIL (CORREGGI IMMEDIATAMENTE) |
-| Elementi mancanti o fuori posizione (>10px) | ❌ FAIL (CORREGGI) |
+| Tutti i pixel campionati corrispondono (±30 per canale) | [OK] PASS |
+| Colori corretti ma testo non campionato correttamente | [OK] PASS (se pdftotext conferma presenza testo) |
+| 1-2 elementi con colore leggermente fuori tolleranza (±40) | [Warning] WARN (documenta, procedi) |
+| Testo invisibile O sovrapposizioni illeggibili | [Issue] FAIL (CORREGGI IMMEDIATAMENTE) |
+| Elementi mancanti o fuori posizione (>10px) | [Issue] FAIL (CORREGGI) |
 
 ## Step 6: Ciclo di Correzione
 

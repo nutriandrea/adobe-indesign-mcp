@@ -15,7 +15,7 @@
     <img src="media/social-preview.png" width="600" alt="Demo video" style="border-radius: 12px; border: 1px solid #312e81;">
   </a>
   <br>
-  <sub>⚡ Click for a quick demo · <a href="https://github.com/nutriandrea/adobe-indesign-mcp/releases/tag/v1.1.0">v1.1.0 release</a></sub>
+  <sub>Demo video · <a href="https://github.com/nutriandrea/adobe-indesign-mcp/releases/tag/v1.1.0">v1.1.0 release</a></sub>
 </p>
 
 <p align="center">
@@ -36,83 +36,82 @@
 
 ---
 
-## 🚀 Why This Exists
+## Why This Exists
 
-**InDesign automation has been broken for 20 years.** ExtendScript is ancient. CEP panels are over-engineered. UXP scripting requires a CS degree. You just want AI to do the layout.
+Automating Adobe InDesign has traditionally required ExtendScript, CEP panels, or UXP scripting. This project exposes InDesign operations through MCP so AI agents and other MCP clients can control documents directly.
 
-This MCP server fixes that. Clone it, point your agent at it, and InDesign is
-yours to drive like a puppeteer.
+Connect the server to an MCP-compatible client and use the available tools to create, edit, and export InDesign documents.
 
-### 🆚 MCP vs The Old Ways
+### MCP vs The Old Ways
 
 | | **MCP (this)** | **ExtendScript** | **CEP Panels** | **UXP Scripts** | **Manual** |
 |---|---|---|---|---|---|
 | **Learn in** | 30 seconds | 3 weeks | 2 months | 1 month | 0 (slow) |
-| **AI-native** | ✅ Any MCP agent | ❌ | ❌ | ❌ | ❌ |
+| **AI-native** | Yes | No | No | No | No |
 | **Tool count** | **199** | Unlimited (you write them) | 5-20 typical | 5-20 typical | ∞ (manual) |
 | **Error messages** | Human-readable | Opaque crashes | Varies | Better | N/A |
 | **Setup time** | 5 minutes | 10 minutes | 2 hours | 30 minutes | Instant |
-| **Undo support** | ✅ Built-in | ❌ | Varies | ❌ | ✅ |
+| **Undo support** | Yes (built-in) | No | Varies | No | Yes |
 | **Search text** | `text_search("pattern")` | Write 50 lines | Maybe | Maybe | Ctrl+F |
-| **Debug mode** | ✅ Stack traces | ❌ | Varies | Limited | N/A |
-| **Remote control** | ✅ Anywhere STDIO works | ❌ InDesign-only | ❌ | ❌ | N/A |
+| **Debug mode** | Yes | No | Varies | Limited | N/A |
+| **Remote control** | Yes | No | No | No | N/A |
 | **Maintenance** | Zero (we handle 199 tools) | You write+test everything | Fragile | Fragile | N/A |
 
 ---
 
-## ✨ What It Can Do
+## What It Can Do
 
-### 📝 Text & Typography (27 tools)
+### Text & Typography (27 tools)
 Create frames, set content, apply paragraph/character styles, control formatting, search with GREP, find/replace, apply fonts, set columns, insets, auto-size, vertical justification, drop caps, keep options, hyphenation, tabs, paragraph rules, text wrap, baseline, linking/unlinking.
 
-### 🎨 Shapes & Objects (20 tools)
+### Shapes & Objects (20 tools)
 Rectangles, ellipses, polygons, lines, groups, anchored objects — create, modify, delete, list, arrange.
 
-### 🖼️ Images (5 tools)
+### Images (5 tools)
 Place from disk, query metadata, fit/proportional, adjust brightness/contrast, relink.
 
-### 🎭 Colors & Swatches (6 tools)
+### Colors & Swatches (6 tools)
 CMYK/RGB/LAB/spot swatches, ink list, gradients, apply to fill/stroke.
 
-### 📄 Pages & Documents (15 tools)
+### Pages & Documents (15 tools)
 Create, open, save, close, getInfo, listOpen — plus page add/delete/duplicate/move/getInfo/listAll/applyMaster, sections.
 
-### 📊 Tables (20 tools)
+### Tables (20 tools)
 Create, set cells, add/delete rows/columns, merge/split, alignment, fills, strokes, insets, header/footer, row/column sizing, table styles, cell styles.
 
-### 🧬 Styles (10 tools)
+### Styles (10 tools)
 Paragraph, character, object styles — create, list, duplicate, delete, apply.
 
-### 🏗️ Masters & Books (10 tools)
+### Masters & Books (10 tools)
 Master spreads — create, duplicate, apply, delete, list, getPages. Books — list, open, getDocuments, synchronize.
 
-### 📤 Export (9 tools)
+### Export (9 tools)
 PDF, EPUB, HTML, JPG, PNG, package — plus preflight, font/swatch/table lists, and `script_run()` for custom ExtendScript.
 
-### 🔍 Find & Replace (5 tools)
+### Find & Replace (5 tools)
 GREP find/replace, format-aware find/replace.
 
-### 🔄 Transform (5 tools)
+### Transform (5 tools)
 Align, distribute, rotate, scale, flip.
 
-### 🔗 Interactive (5 tools)
+### Interactive (5 tools)
 Hyperlinks, buttons, cross-reference anchors.
 
-### 📚 References (10 tools)
+### References (10 tools)
 Footnotes, endnotes, cross-references, index entries/topics/generation.
 
-### 📋 Lists (6 tools)
+### Lists (6 tools)
 Define, apply to paragraph/selection, remove, restart numbering.
 
-### 🧩 XML & Data Merge (11 tools)
+### XML & Data Merge (11 tools)
 XML tags, import/export, data merge with CSV/TSV/XML sources.
 
-### 🔧 Other
+### Other
 Layers, effects (drop shadow, feather, transparency), TOC, sections, undo/redo, undo groups.
 
 ---
 
-## 🧠 Included AI Skills
+## Included AI Skills
 
 Ten skills ship with the repo, auto-loaded by trigger keywords when you use any AI agent:
 
@@ -131,7 +130,7 @@ Ten skills ship with the repo, auto-loaded by trigger keywords when you use any 
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────┐       STDIO        ┌──────────────────────┐     WebSocket     ┌──────────────────┐
@@ -227,31 +226,31 @@ adding a text frame, reading it back, and closing.
 
 ---
 
-## 🎯 Use Cases
+## Use Cases
 
-### 🏢 Agency Production
+### Agency Production
 > "Create a 200-page catalog from this CSV. Product name in 14pt Arial Bold, price in 12pt Arial Regular, description in 10pt. Add a red 'SALE' badge on page 1, 50, 100, 150. Export as PDF."
 
-### 📚 Book Publishing
+### Book Publishing
 > "Import this Word document. Map Heading 1 to 'Chapter Title' style, Normal to 'Body Text'. Add running headers with page numbers. Generate a TOC. Export to PDF with crop marks."
 
-### 🎨 Creative Automation
+### Creative Automation
 > "Take this InDesign template and generate 50 variations with different colors and text from this spreadsheet. Export each as a separate PDF."
 
-### 🏭 Print Production
+### Print Production
 > "Check all 200 files for missing fonts and broken links. Fix them. Export as PDF/X-1a."
 
-### 🔄 Continuous Publishing
+### Continuous Publishing
 > "Every morning at 8am, update the daily newspaper template with fresh content from our CMS, preflight, and upload to the web server."
 
 ---
 
-## ⚡ Quick Start (30 seconds)
+## Quick Start
 
 Two halves: the **server** your agent runs — one line from npm, no clone and no
 build — and the **bridge** that reaches InDesign on this machine.
 
-### 1️⃣ Connect InDesign
+### 1. Connect InDesign
 
 The server listens on `127.0.0.1:8120`; something still has to drive InDesign.
 Pick by platform:
@@ -276,7 +275,7 @@ var in the config you use in step 2 (see
 [`examples/claude-desktop.windows.json`](examples/claude-desktop.windows.json)).
 See [WINDOWS.md](WINDOWS.md) for the details and caveats.
 
-### 2️⃣ Connect your AI agent
+### 2. Connect your AI agent
 
 Both hosts start the same published package — nothing to clone, nothing to
 build.
@@ -314,16 +313,16 @@ Ready-made files for Claude Desktop, Cursor and Claude Code — including the
 Windows COM variant — are in [`examples/`](examples/README.md). Each one is
 copy-paste.
 
-### 3️⃣ Start creating
+### 3. Start creating
 
 ```
-🤖 "Create a landscape A3 document with 3 pages."
-🤖 "Add a blue rectangle covering the top half of page 1."
-🤖 "In the rectangle, add text 'Hello World' in white, Arial Bold 72pt."
-🤖 "Export page 1 as JPG."
+"Create a landscape A3 document with 3 pages."
+"Add a blue rectangle covering the top half of page 1."
+"In the rectangle, add text 'Hello World' in white, Arial Bold 72pt."
+"Export page 1 as JPG."
 ```
 
-### 📝 Notes for MCP client developers
+###  Notes for MCP client developers
 
 Building a custom client (script, harness, test runner) against this server? Two lessons from real-world integration:
 
@@ -336,11 +335,11 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ---
 
-## 🆕 What's New in v1.6.0
+## What's New in v1.6.0
 
 ### Fixed
 
-| ⚠️ | Read this before you script |
+| Note | Read this before you script |
 |---|---|
 | **The layout skill named tools that do not exist** | `skills/indesign/indesign-mcp-layout/SKILL.md` advertised an `mcp_indesign_*` prefix the registry never used, and pointed connectivity checks at `health_check` and `list_ai_skills` — neither is registered by any handler. A skill is instruction, so naming a tool that does not resolve sends a model into a second failure on top of the one it was recovering from. |
 
@@ -364,7 +363,7 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ### For AI agents
 
-| ⚠️ | Read this before you script |
+| Note | Read this before you script |
 |---|---|
 | **Pass `document_id` — don't trust the front tab** | Every tool takes an optional `document_id`: a document name (as `document_listOpen` reports it) or a 0-based index. With more than one document open the front tab is **not** reliably the intended target, and a call that lands on the wrong document edits the wrong file. Call `document_getState`, then pass `document_id` on everything that follows. |
 
@@ -388,7 +387,7 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ### For AI agents
 
-| ⚠️ | Read this before you script |
+| Note | Read this before you script |
 |---|---|
 | **Failures now tell you how to recover** | A failing call returns a JSON envelope `{ ok: false, code, message, suggested_next_tool?, suggested_args? }` instead of prose. Branch on `code`, and call `suggested_next_tool` when it is present rather than guessing. |
 | **State before action** | `document_getState` returns the front document's geometry, its index, every open document, the active layer and the selection count in one round-trip. Call it before mutating instead of assembling that state from four separate calls. |
@@ -426,7 +425,7 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ### For AI agents
 
-| ⚠️ | Read this before you script |
+| Note | Read this before you script |
 |---|---|
 | **Prefer the typed tools** | `export_executeScript` and `script_run` have **no cancellation**. A hung script leaves the bridge busy and every later call queues behind it until the host restarts. Loops, font enumeration and multi-mutation probes belong in the typed tools, which validate arguments and time out. See [skills/indesign/indesign-mcp-layout](skills/indesign/indesign-mcp-layout/SKILL.md). |
 
@@ -488,7 +487,7 @@ Every message is a single-line JSON-RPC object terminated by `\n`; there is no f
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 All settings have defaults — zero config required. To customize, copy `.env.example` to `.env` or pass a JSON file; environment variables win over the file:
 
@@ -515,13 +514,13 @@ Precedence: **environment variables > JSON config file > defaults**. Invalid val
 
 ---
 
-## 🪟 Windows
+## Windows
 
 Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or the new opt-in **COM bridge** that needs no plugin at all. See [WINDOWS.md](WINDOWS.md).
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 ├── src/
@@ -552,7 +551,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 | Requirement | Version |
 |-------------|---------|
@@ -562,7 +561,7 @@ Two ways to run on Windows: the standard UXP plugin flow (identical to macOS) or
 
 ---
 
-## 🧪 Development
+## Development
 
 ```bash
 npm test            # Run 1131 tests
@@ -618,7 +617,7 @@ when InDesign is closed.
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [ ] **InDesign Server** — headless server support for CI/CD pipelines
 - [ ] **Live preview** — stream InDesign canvas to agent
@@ -629,7 +628,7 @@ when InDesign is closed.
 
 ---
 
-## 📚 Deep Dives
+## Deep Dives
 
 - [Architecture](docs/architecture.md) — the four-process macOS path, request lifecycle, error contract
 - [Available tools](docs/available-tools.md) — every tool, generated from the registry
@@ -641,7 +640,7 @@ when InDesign is closed.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 PRs welcome! The handler pattern is designed to be simple:
 
@@ -654,7 +653,7 @@ Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 This server is a merge of what four people found in the field. Each of these
 contributions fixed something that was genuinely broken, not a cosmetic
@@ -701,14 +700,14 @@ preference.
 
 ---
 
-## 📄 License
+## License
 
 MIT © Andrea Cacioppo
 
 ---
 
 <p align="center">
-  <b>Made with ❤️ for designers who code and AI agents who design.</b><br>
+  <b>For designers who code and AI agents who design.</b><br>
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp">GitHub</a> ·
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/issues">Issues</a> ·
   <a href="https://github.com/nutriandrea/adobe-indesign-mcp/blob/main/CONTRIBUTING.md">Contributing</a>

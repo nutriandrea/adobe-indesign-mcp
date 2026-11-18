@@ -74,7 +74,7 @@ will work until a client connects. Fix one of:
 - **UXP panel:** load `plugin/` in the UXP Developer Tool and open the **MCP
   Bridge** panel. It auto-connects on open. Confirm it shows *Connected*.
 - **Plugin-free macOS:** run `./start-bridge.sh` (or `node bridge-proxy.mjs`).
-  It prints `✅ Bridge proxy connected` when it attaches.
+  It prints `[OK] Bridge proxy connected` when it attaches.
 - **Windows COM:** start the server with `COM_BRIDGE_ENABLED=true`; there is no
   listener to connect to.
 

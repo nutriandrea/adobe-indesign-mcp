@@ -5,7 +5,7 @@
 > developer can install in one command.
 >
 > Reference standard: [`alisaitteke/photoshop-mcp`](https://github.com/alisaitteke/photoshop-mcp)
-> — 641★, 73 forks, 118–128 tools, MIT, active.
+> — 641, 73 forks, 118–128 tools, MIT, active.
 
 **v2 note.** v1 of this plan was submitted to adversarial review and did not
 survive it intact. Three of its factual claims were wrong, its critical path
@@ -239,7 +239,7 @@ unmeasured.
 
 ---
 
-### S5 — Make it installable ⚠️ blocks adoption
+### S5 — Make it installable  blocks adoption
 **Depends on:** none · **Parallel with:** S1, S8 · **Model:** default
 
 **Context.** G6. Nothing else matters if nobody can install it.
@@ -404,7 +404,7 @@ skipping the publish, so a tag cannot look released and be uninstallable.
 
 ---
 
-### S10 — Live scenario suite  ⚠️ needs a Windows machine
+### S10 — Live scenario suite   needs a Windows machine
 **Depends on:** S3, S4 · **Parallel with:** S7, S9 · **Model:** default
 
 **Context.** G11. We have exactly one live test — the macOS smoke test added in

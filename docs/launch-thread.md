@@ -1,6 +1,6 @@
 # Launch Content
 
-## 🐦 X/Twitter Thread
+##  X/Twitter Thread
 
 **Tweet 1:**
 > Adobe InDesign automation has been broken for 20 years.
@@ -9,7 +9,7 @@
 >
 > So I built the most comprehensive MCP server for InDesign. 183 tools. 31 handlers. Full DOM control.
 >
-> npm install indesign-nutria-mcp 🧵👇
+> npm install indesign-nutria-mcp 
 
 **Tweet 2:**
 > What can it do?
@@ -18,7 +18,7 @@
 >
 > One sentence. Zero scripting. It just works.
 >
-> 🎨 Shapes · 📝 Text · 🖼️ Images · 📊 Tables · 📤 Export · 🧬 Styles
+>  Shapes ·  Text ·  Images ·  Tables ·  Export ·  Styles
 
 **Tweet 3:**
 > The tool catalog is MASSIVE:
@@ -59,7 +59,7 @@
 >
 > Stars, forks, PRs welcome. If you use InDesign + AI, this will change your workflow.
 
-## 📝 LinkedIn Post
+##  LinkedIn Post
 
 > **InDesign + AI = The automation we always deserved**
 >
